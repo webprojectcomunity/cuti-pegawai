@@ -94,18 +94,24 @@
           </div>
           <div class="mb-4">
             <label class="form-label">Nomor Telepon / HP</label>
-            <input type="text" class="form-control" name="telepon" required>
+            <div class="input-group">
+              <span class="input-group-text fw-bold">+62</span>
+              <input type="tel" class="form-control" id="inputTelepon" name="telepon" placeholder="8123456789" required oninput="formatNomorHp(this)">
+            </div>
+            <div class="rules-info">*Masukkan nomor HP tanpa angka 0 di depan (Contoh: 8123456789)</div>
           </div>
 
           <div class="section-title">VI. PEJABAT PEMBERI PERSETUJUAN</div>
           <div class="row mb-4">
             <div class="col-md-6 border-end">
               <label class="form-label fw-bold text-primary">Atasan Langsung (Bagian VII)</label>
+              <input type="text" class="form-control mb-2" name="jabatanAtasan" placeholder="Jabatan Atasan Langsung (misal: Kasubbag SDM)" required>
               <input type="text" class="form-control mb-2" name="namaAtasan" placeholder="Nama Atasan Langsung" required>
               <input type="text" class="form-control" name="nipAtasan" placeholder="NIP Atasan Langsung" required>
             </div>
             <div class="col-md-6">
               <label class="form-label fw-bold text-primary">Pejabat Berwenang (Bagian VIII)</label>
+              <input type="text" class="form-control mb-2" name="jabatanPejabat" placeholder="Jabatan Pejabat (misal: Sekretaris KPU)" required>
               <input type="text" class="form-control mb-2" name="namaPejabat" placeholder="Nama Pejabat Berwenang" required>
               <input type="text" class="form-control" name="nipPejabat" placeholder="NIP Pejabat Berwenang" required>
             </div>
@@ -149,11 +155,15 @@
   </div>
 
   <script>
-    // =========================================================================
-    // PASTI KAN URL DI BAWAH INI SESUAI DENGAN URL DEPLOYMENT GOOGLE APPS SCRIPT
-    // (Pilih 'Anyone' / 'Siapa saja' saat Deploy sebagai Web App)
-    // =========================================================================
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
+
+    function formatNomorHp(input) {
+      let val = input.value.replace(/[^0-9]/g, '');
+      if (val.startsWith('0')) {
+        val = val.substring(1);
+      }
+      input.value = val;
+    }
 
     function toggleSakitUpload() {
       const jenis = document.getElementById('jenisCuti').value;
@@ -172,7 +182,6 @@
       const formData = new FormData(form);
       const data = Object.fromEntries(formData.entries());
       
-      // Tambahkan aksi khusus agar dibaca oleh doPost() di kode.gs
       data.action = 'simpanDataCuti';
 
       btn.disabled = true;
@@ -227,57 +236,48 @@
     }
 
     function cariDataOlehNip() {
-  const nip = document.getElementById('inputNipCari').value.trim();
-  const status = document.getElementById('searchStatus');
-  const btnCari = document.getElementById('btnCari');
+      const nip = document.getElementById('inputNipCari').value.trim();
+      const status = document.getElementById('searchStatus');
+      const btnCari = document.getElementById('btnCari');
 
-  if (!nip) {
-    alert("Silakan masukkan NIP terlebih dahulu!");
-    return;
-  }
+      if (!nip) {
+        alert("Silakan masukkan NIP terlebih dahulu!");
+        return;
+      }
 
-  btnCari.disabled = true;
-  status.innerText = "Sedang mencari data...";
-  status.style.color = "blue";
+      btnCari.disabled = true;
+      status.innerText = "Sedang mencari data...";
+      status.style.color = "blue";
 
-  // Menggunakan mode 'cors' dan redirect 'follow'
-  const targetUrl = `${WEB_APP_URL}?action=cari&nip=${encodeURIComponent(nip)}`;
+      const targetUrl = `${WEB_APP_URL}?action=cari&nip=${encodeURIComponent(nip)}`;
 
-  fetch(targetUrl, {
-    method: 'GET',
-    redirect: 'follow'
-  })
-  .then(response => {
-    if (!response.ok) throw new Error("Jaringan bermasalah atau CORS terblokir");
-    return response.json();
-  })
-  .then(result => {
-    if (result && result.success) {
-      // 1. Simpan data hasil pencarian ke LocalStorage agar bisa dibaca halaman preview
-      localStorage.setItem('previewCutiData', JSON.stringify(result.data));
-
-      status.innerText = "Data ditemukan! Membuka halaman preview...";
-      status.style.color = "green";
-
-      // 2. Langsung redirect ke preview.html (sesuai file di GitHub Pages Anda atau GAS Web App)
-      // Jika preview.html ada di repo GitHub Pages yang sama:
-      window.location.href = `preview.html?nip=${encodeURIComponent(nip)}`;
-      
-      // ATAU jika preview disajikan langsung dari Google Apps Script:
-      // window.location.href = `${WEB_APP_URL}?page=preview&nip=${encodeURIComponent(nip)}`;
-    } else {
-      status.innerText = result.message || "NIP tidak ditemukan atau belum pernah mengajukan cuti.";
-      status.style.color = "red";
-      btnCari.disabled = false;
+      fetch(targetUrl, {
+        method: 'GET',
+        redirect: 'follow'
+      })
+      .then(response => {
+        if (!response.ok) throw new Error("Jaringan bermasalah atau CORS terblokir");
+        return response.json();
+      })
+      .then(result => {
+        if (result && result.success) {
+          localStorage.setItem('previewCutiData', JSON.stringify(result.data));
+          status.innerText = "Data ditemukan! Membuka halaman preview...";
+          status.style.color = "green";
+          window.location.href = `preview.html?nip=${encodeURIComponent(nip)}`;
+        } else {
+          status.innerText = result.message || "NIP tidak ditemukan atau belum pernah mengajukan cuti.";
+          status.style.color = "red";
+          btnCari.disabled = false;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        status.innerText = "Gagal mengambil data. Pastikan file diakses via web server/GitHub Pages.";
+        status.style.color = "red";
+        btnCari.disabled = false;
+      });
     }
-  })
-  .catch(err => {
-    console.error(err);
-    status.innerText = "Gagal mengambil data. Pastikan file diakses via web server/GitHub Pages (bukan file:///).";
-    status.style.color = "red";
-    btnCari.disabled = false;
-  });
-}
   </script>
 </body>
 </html>
