@@ -228,6 +228,21 @@
 </div>
 
 <script>
+  // Fungsi untuk mengubah ISO String / Date ke format Indonesia (contoh: 18 April 2024)
+  function formatTglIndo(stringTanggal) {
+    if (!stringTanggal || stringTanggal === '-') return '-';
+    
+    const dateObj = new Date(stringTanggal);
+    
+    // Periksa apakah konversi tanggal valid
+    if (isNaN(dateObj.getTime())) {
+      return stringTanggal; // Jika bukan format tanggal ISO, kembalikan teks aslinya
+    }
+
+    const opsi = { day: 'numeric', month: 'long', year: 'numeric' };
+    return dateObj.toLocaleDateString('id-ID', opsi);
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     // 1. Coba baca data dari localStorage atau sessionStorage
     let dataRaw = localStorage.getItem('previewCutiData') || sessionStorage.getItem('lastCutiData');
@@ -251,11 +266,11 @@
     document.getElementById('disp_masaKerja').innerText = (data.masaKerja || '-') + ' Tahun';
     document.getElementById('disp_unitKerja').innerText = data.unitKerja || 'KPU KABUPATEN KARIMUN';
     
-    // IV. Data Cuti (dengan fallback key)
+    // IV. Data Cuti (di-format menggunakan formatTglIndo)
     document.getElementById('disp_alasan').innerText = data.alasan || '-';
     document.getElementById('disp_lama').innerText = data.lamaCuti || data.lama || '-';
-    document.getElementById('disp_mulai').innerText = data.mulaiTanggal || data.tglMulai || '-';
-    document.getElementById('disp_sampai').innerText = data.sampaiTanggal || data.tglSelesai || '-';
+    document.getElementById('disp_mulai').innerText = formatTglIndo(data.mulaiTanggal || data.tglMulai);
+    document.getElementById('disp_sampai').innerText = formatTglIndo(data.sampaiTanggal || data.tglSelesai);
     
     // V. Saldo Cuti
     document.getElementById('disp_n2').innerText = data.n2_saldo !== undefined ? data.n2_saldo : '0';
