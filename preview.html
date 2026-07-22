@@ -190,7 +190,7 @@
     <tr>
       <td colspan="4" class="text-end" style="border: none;">
         <div style="display: inline-block; text-align: center; width: 45%;">
-          <p>Atasan Langsung,</p>
+          <p id="disp_jabatanAtasan">Atasan Langsung,</p>
           <br><br><br>
           <p><b class="uppercase" id="disp_namaAtasan">-</b></p>
           <p>NIP: <span id="disp_nipAtasan">-</span></p>
@@ -208,13 +208,14 @@
     <tr>
       <td colspan="4" class="text-end" style="border: none;">
         <div style="display: inline-block; text-align: center; width: 45%;">
-          <p>Pejabat Berwenang,</p>
+          <p id="disp_jabatanPejabat">Pejabat Berwenang,</p>
           <br><br><br>
           <p><b class="uppercase" id="disp_namaPejabat">-</b></p>
           <p>NIP: <span id="disp_nipPejabat">-</span></p>
         </div>
       </td>
     </tr>
+  </table>
   </table>
 
   <div style="font-size: 10px; margin-top: 5px; line-height: 1.4; font-family: Arial, sans-serif;">
@@ -224,6 +225,8 @@
     <div>***&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Diisi pejabat kepegawaian</div>
     <div>****&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Diisi tanda centang &amp; alasan</div>
     <div>N&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Cuti tahun berjalan</div>
+    <div>N-1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Sisa cuti 1 tahun sebelumya</div>
+    <div>N-2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Sisa cuti 2 tahun sebelumya</div>
   </div>
 </div>
 
@@ -284,11 +287,13 @@
     document.getElementById('sign_nip').innerText = data.nip || '-';
 
     // VII & VIII. Data Atasan Langsung & Pejabat Berwenang
-    document.getElementById('disp_namaAtasan').innerText = data.namaAtasan || '-';
-    document.getElementById('disp_nipAtasan').innerText = data.nipAtasan || '-';
-    document.getElementById('disp_namaPejabat').innerText = data.namaPejabat || '-';
-    document.getElementById('disp_nipPejabat').innerText = data.nipPejabat || '-';
+document.getElementById('disp_jabatanAtasan').innerText = data.jabatanAtasan || 'Atasan Langsung,';
+document.getElementById('disp_namaAtasan').innerText = data.namaAtasan || '-';
+document.getElementById('disp_nipAtasan').innerText = data.nipAtasan || '-';
 
+document.getElementById('disp_jabatanPejabat').innerText = data.jabatanPejabat || 'Pejabat Berwenang,';
+document.getElementById('disp_namaPejabat').innerText = data.namaPejabat || '-';
+document.getElementById('disp_nipPejabat').innerText = data.nipPejabat || '-';
     // II. Logika Centang Jenis Cuti
     const jenis = data.jenisCuti;
     const checks = {
