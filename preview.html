@@ -11,7 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
-    /* Mengunci ukuran box dan margin agar tidak berlebih */
+    /* Reset & standar box model */
     * {
       box-sizing: border-box;
     }
@@ -20,33 +20,34 @@
       background-color: #f0f2f5; 
       padding: 10px 0; 
       font-family: "Times New Roman", Times, serif; 
-      font-size: 12px;
-      line-height: 1.1; 
+      font-size: 11.5px; /* Sedikit dirampingkan agar spasi teks aman */
+      line-height: 1.15; 
     }
 
+    /* Mengunci Ukuran Kertas F4 (21.5cm x 33cm) */
     .paper { 
       background: white; 
-      padding: 0.6cm 1.2cm; 
+      padding: 0.6cm 1cm; 
       width: 21.5cm; 
-      height: 33cm; /* Mengunci tinggi tepat 33cm F4 */
+      height: 33cm; 
       max-height: 33cm;
       margin: auto;
       box-shadow: 0 0 10px rgba(0,0,0,0.15);
-      overflow: hidden; /* Mencegah elemen keluar halaman */
+      overflow: hidden; /* Mencegah elemen meluber ke luar kontainer */
     }
 
     .table-custom {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 3px; 
-      page-break-inside: avoid; /* Memaksa tabel tidak terpisah ke halaman 2 */
+      page-break-inside: avoid; /* Memaksa tabel tetap dalam satu halaman */
     }
 
     .table-custom td, .table-custom th {
       border: 1px solid black;
-      padding: 1px 4px; /* Padding lebih ramping */
+      padding: 1.5px 4px; /* Padding dipresisikan */
       vertical-align: top;
-      font-size: 12px;
+      font-size: 11.5px;
     }
 
     .section-header {
@@ -60,25 +61,33 @@
     
     p { margin-bottom: 1px; }
 
-    /* Pengatur Jarak Tanda Tangan agar tidak memakan banyak tempat */
+    /* Pengatur tinggi area tanda tangan yang aman dan rapi */
     .space-ttd {
-      height: 45px; 
+      height: 40px; 
     }
 
-    /* Aturan Cetak (Print View) */
+    /* Aturan Cetak Kertas (Print View) */
     @media print {
       @page {
         size: 21.5cm 33cm;
         margin: 0;
       }
-      body { background: white; padding: 0; }
+      html, body {
+        width: 21.5cm;
+        height: 33cm;
+        background: white; 
+        padding: 0;
+        margin: 0;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
       .paper { 
         box-shadow: none; 
         border: none; 
-        margin: 0; 
-        width: 21.5cm; 
-        height: 33cm; 
-        padding: 0.6cm 1.2cm;
+        margin: 0 auto; 
+        width: 21.5cm !important; 
+        height: 33cm !important; 
+        padding: 0.6cm 1cm;
       }
       .no-print { display: none !important; }
     }
@@ -96,15 +105,17 @@
 </div>
 
 <div class="paper" id="areaCetak">
-  <div style="margin-left: 65%; margin-bottom: 4px;">
+  <!-- Header Tanggal & Tujuan -->
+  <div style="margin-left: 60%; margin-bottom: 4px;">
     <p>Karimun, <span id="tglSekarang"></span></p>
     <p>Kepada</p>
-    <p>Yth. <b>Sekretaris KPU Karimun</b></p>
+    <p>Yth. <b>Sekretaris KPU Kab. Karimun</b></p>
+    <p style="margin-left: 15px;">cq. Plt. Kasubbag Hukum dan SDM</p>
     <p>di -</p>
-    <p style="margin-left: 20px;">Karimun</p>
+    <p style="margin-left: 15px;">Tempat</p>
   </div>
 
-  <div class="text-center fw-bold mb-2" style="font-size: 13px;">FORMULIR PERMINTAAN DAN PEMBERIAN CUTI</div>
+  <div class="text-center fw-bold mb-2" style="font-size: 12.5px;">FORMULIR PERMINTAAN DAN PEMBERIAN CUTI</div>
 
   <!-- I. DATA PEGAWAI -->
   <table class="table-custom">
@@ -112,7 +123,7 @@
     <tr>
       <td width="15%">Nama</td>
       <td width="35%" class="uppercase" id="disp_nama">-</td>
-      <td width="15%">NIP</td>
+      <td width="15%">NIP/PPK</td>
       <td width="35%" id="disp_nip">-</td>
     </tr>
     <tr>
@@ -129,7 +140,7 @@
 
   <!-- II. JENIS CUTI -->
   <table class="table-custom">
-    <tr class="section-header"><td colspan="4">II. JENIS CUTI YANG DIAMBIL**</td></tr>
+    <tr class="section-header"><td colspan="4">II. JENIS CUTI YANG DIAMBIL **</td></tr>
     <tr>
       <td width="45%">1. Cuti Tahunan</td><td width="5%" class="text-center fw-bold" id="check_tahunan"></td>
       <td width="45%">2. Cuti Besar</td><td width="5%" class="text-center fw-bold" id="check_besar"></td>
@@ -165,7 +176,7 @@
 
   <!-- V. CATATAN CUTI -->
   <table class="table-custom">
-    <tr class="section-header"><td colspan="5">V. CATATAN CUTI***</td></tr>
+    <tr class="section-header"><td colspan="5">V. CATATAN CUTI ***</td></tr>
     <tr>
       <td colspan="3" width="50%">1. CUTI TAHUNAN</td>
       <td width="40%">2. CUTI BESAR</td>
@@ -191,16 +202,16 @@
     <tr>
       <td width="45%" class="text-center">Alamat Lengkap</td>
       <td width="25%" class="text-center">Telpon</td>
-      <td width="30%" rowspan="2" class="text-center" style="vertical-align: top; padding-top: 3px;">
+      <td width="30%" rowspan="2" class="text-center" style="vertical-align: top; padding-top: 2px;">
         <p style="margin: 0;">Hormat Saya,</p>
         <div class="space-ttd"></div>
         <p style="margin: 0;">(<b class="uppercase" id="sign_nama">-</b>)</p>
-        <p style="margin: 0;">NIP. <span id="sign_nip">-</span></p>
+        <p style="margin: 0;">NIP/PPK. <span id="sign_nip">-</span></p>
       </td>
     </tr>
     <tr>
-      <td style="padding: 3px;"><span id="disp_alamat">-</span></td>
-      <td class="text-center" style="padding: 3px;"><span id="disp_telp">-</span></td>
+      <td style="padding: 2px 4px;"><span id="disp_alamat">-</span></td>
+      <td class="text-center" style="padding: 2px 4px;"><span id="disp_telp">-</span></td>
     </tr>
   </table>
 
@@ -215,14 +226,14 @@
       <td width="23%">DITANGGUHKAN ****</td>
       <td width="42%">TIDAK DISETUJUI ****</td>
     </tr>
-    <tr class="text-center" style="height: 16px;">
+    <tr class="text-center" style="height: 15px;">
       <td></td><td></td><td></td><td></td>
     </tr>
     <tr>
-      <td colspan="3" style="vertical-align: top; padding: 3px;">
+      <td colspan="3" style="vertical-align: top; padding: 2px 4px;">
         <span id="disp_catatanAtasan"></span>
       </td>
-      <td class="text-center" style="vertical-align: top; padding: 3px;">
+      <td class="text-center" style="vertical-align: top; padding: 2px 4px;">
         <p style="margin: 0;" id="disp_jabatanAtasan">Plt. Kasubbag Keuangan Hukum dan SDM</p>
         <div class="space-ttd"></div>
         <p style="margin: 0;">( <b class="uppercase" id="disp_namaAtasan">-</b> )</p>
@@ -242,14 +253,14 @@
       <td width="23%">DITANGGUHKAN ****</td>
       <td width="42%">TIDAK DISETUJUI ****</td>
     </tr>
-    <tr class="text-center" style="height: 16px;">
+    <tr class="text-center" style="height: 15px;">
       <td></td><td></td><td></td><td></td>
     </tr>
     <tr>
-      <td colspan="3" style="vertical-align: top; padding: 3px;">
+      <td colspan="3" style="vertical-align: top; padding: 2px 4px;">
         <span id="disp_catatanPejabat"></span>
       </td>
-      <td class="text-center" style="vertical-align: top; padding: 3px;">
+      <td class="text-center" style="vertical-align: top; padding: 2px 4px;">
         <p style="margin: 0;" id="disp_jabatanPejabat">Pejabat Berwenang,</p>
         <div class="space-ttd"></div>
         <p style="margin: 0;">( <b class="uppercase" id="disp_namaPejabat">-</b> )</p>
@@ -259,12 +270,12 @@
   </table>
 
   <!-- FOOTER CATATAN -->
-  <div style="font-size: 9.5px; margin-top: 3px; line-height: 1.2; font-family: Arial, sans-serif;">
+  <div style="font-size: 9px; margin-top: 2px; line-height: 1.15; font-family: Arial, sans-serif;">
     <div style="margin-bottom: 1px;">Catatan:</div>
     <div>*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Coret yang tidak perlu</div>
-    <div>**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pilih salah satu dengan (V)</div>
-    <div>***&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Diisi pejabat kepegawaian</div>
-    <div>****&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Diisi tanda centang &amp; alasan</div>
+    <div>**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pilih salah satu dengan memberi tanda centang (✔)</div>
+    <div>***&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Diisi oleh pejabat yang menangani bidang kepegawaian sebelum PNS mengajukan Cuti</div>
+    <div>****&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Diberi tanda centang dan alasannya</div>
     <div>N&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Cuti tahun berjalan</div>
     <div>N-1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Sisa cuti 1 tahun sebelumnya</div>
     <div>N-2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Sisa cuti 2 tahun sebelumnya</div>
@@ -284,14 +295,14 @@
     const element = document.getElementById('areaCetak');
     const namaPegawai = document.getElementById('disp_nama').innerText || 'Pegawai';
     
-    // Opsi html2pdf dioptimasi agar pas 1 halaman tanpa margin kosong berlebih
+    // Konfigurasi html2pdf yang terkunci ke F4 tanpa margin tambahan
     const options = {
       margin:       0,
       filename:     `Surat_Cuti_${namaPegawai}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
       jsPDF:        { unit: 'cm', format: [21.5, 33], orientation: 'portrait' },
-      pagebreak:    { mode: 'avoid-all' } // Mencegah pemotongan halaman
+      pagebreak:    { mode: 'avoid-all' }
     };
 
     html2pdf().set(options).from(element).save();
@@ -344,7 +355,7 @@
     document.getElementById('disp_namaPejabat').innerText = data.namaPejabat || '-';
     document.getElementById('disp_nipPejabat').innerText = data.nipPejabat || '-';
 
-    // II. Logika Centang Jenis Cuti
+    // II. Logika Centang Jenis Cuti (Menggunakan centang ☑ jika aktif)
     const jenis = data.jenisCuti;
     const checks = {
       "Cuti Tahunan": "check_tahunan",
@@ -356,7 +367,7 @@
     };
 
     if (checks[jenis] && document.getElementById(checks[jenis])) {
-      document.getElementById(checks[jenis]).innerText = "V";
+      document.getElementById(checks[jenis]).innerText = "☑";
     }
   });
 </script>
