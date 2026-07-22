@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Formulir Pengajuan Cuti</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <style>
+    body { background-color: #f8f9fa; padding-top: 20px; padding-bottom: 40px; }
+    .form-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .section-title { font-weight: bold; background-color: #e9ecef; padding: 10px; border-radius: 5px; margin-top: 20px; margin-bottom: 15px; }
+    #uploadSakitContainer { display: none; border: 2px dashed #dc3545; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
+    .rules-info { font-size: 0.85rem; color: #6c757d; margin-top: 5px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-8 form-container">
+        <h3 class="text-center mb-4">FORMULIR PERMINTAAN DAN PEMBERIAN CUTI</h3>
+        
+        <form id="cutiForm" onsubmit="submitForm(event)">
+          <div class="section-title">I. DATA PEGAWAI</div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Nama</label>
+              <input type="text" class="form-control" name="nama" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">NIP</label>
+              <input type="text" class="form-control" name="nip" required>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Jabatan</label>
+              <input type="text" class="form-control" name="jabatan" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Masa Kerja (Tahun)</label>
+              <input type="number" class="form-control" name="masaKerja" id="masaKerja" placeholder="Contoh: 10" required>
+              <div class="rules-info">*Tulis angka tahunnya saja</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Unit Kerja</label>
+              <input type="text" class="form-control" name="unitKerja" value="KPU KABUPATEN KARIMUN" required>
+            </div>
+          </div>
+
+          <div class="section-title">II. JENIS CUTI YANG DIAMBIL</div>
+          <div class="mb-3">
+            <select class="form-select" name="jenisCuti" id="jenisCuti" onchange="toggleSakitUpload()" required>
+              <option value="" disabled selected>-- Pilih Jenis Cuti --</option>
+              <option value="Cuti Tahunan">Cuti Tahunan (Min. 1 Thn Kerja)</option>
+              <option value="Cuti Besar">Cuti Besar (Min. 5 Thn Kerja)</option>
+              <option value="Cuti Sakit">Cuti Sakit (Wajib Lampiran)</option>
+              <option value="Cuti Melahirkan">Cuti Melahirkan</option>
+              <option value="Cuti Karena Alasan Penting">Cuti Karena Alasan Penting</option>
+              <option value="Cuti di Luar Tanggungan Negara">Cuti di Luar Tanggungan Negara (Min. 5 Thn Kerja)</option>
+            </select>
+          </div>
+
+          <div id="uploadSakitContainer">
+            <label class="form-label fw-bold text-danger">Upload Surat Keterangan Sakit (Wajib PDF)</label>
+            <input type="file" class="form-control" id="fileSakit" accept=".pdf">
+          </div>
+
+          <div class="section-title">III. ALASAN CUTI</div>
+          <div class="mb-3">
+            <textarea class="form-control" name="alasan" rows="2" placeholder="Sebutkan alasan detail..." required></textarea>
+          </div>
+
+          <div class="section-title">IV. LAMANYA CUTI</div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Lama Cuti (Hari)</label>
+              <input type="number" class="form-control" name="lamaCuti" id="lamaCuti" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Mulai Tanggal</label>
+              <input type="date" class="form-control" name="mulaiTanggal" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">s/d Tanggal</label>
+              <input type="date" class="form-control" name="sampaiTanggal" required>
+            </div>
+          </div>
+
+          <div class="section-title">V. ALAMAT SELAMA CUTI</div>
+          <div class="mb-3">
+            <textarea class="form-control" name="alamat" rows="2" required></textarea>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Nomor Telepon / HP</label>
+            <input type="text" class="form-control" name="telepon" required>
+          </div>
+
+          <div class="section-title">VI. PEJABAT PEMBERI PERSETUJUAN</div>
+          <div class="row mb-4">
+            <div class="col-md-6 border-end">
+              <label class="form-label fw-bold text-primary">Atasan Langsung (Bagian VII)</label>
+              <input type="text" class="form-control mb-2" name="namaAtasan" placeholder="Nama Atasan Langsung" required>
+              <input type="text" class="form-control" name="nipAtasan" placeholder="NIP Atasan Langsung" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-primary">Pejabat Berwenang (Bagian VIII)</label>
+              <input type="text" class="form-control mb-2" name="namaPejabat" placeholder="Nama Pejabat Berwenang" required>
+              <input type="text" class="form-control" name="nipPejabat" placeholder="NIP Pejabat Berwenang" required>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg" id="btnSubmit">Kirim Permintaan Cuti</button>
+            <hr>
+            <button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalCari">
+              Cetak / Lihat Surat Cuti (Input NIP)
+            </button>
+          </div>
+        </form>
+        
+        <div id="statusMessage" class="mt-3 text-center fw-bold"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Pencarian -->
+  <div class="modal fade" id="modalCari" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Cari Data Cuti Pegawai</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Masukkan NIP Anda</label>
+            <input type="text" id="inputNipCari" class="form-control" placeholder="Masukkan NIP yang terdaftar">
+          </div>
+          <div id="searchStatus" class="text-center small"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary" id="btnCari" onclick="cariDataOlehNip()">Cari & Cetak</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // PASTI KAN URL DI BAWAH INI SESUAI DENGAN URL DEPLOYMENT GOOGLE APPS SCRIPT
+    // (Pilih 'Anyone' / 'Siapa saja' saat Deploy sebagai Web App)
+    // =========================================================================
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
+
+    function toggleSakitUpload() {
+      const jenis = document.getElementById('jenisCuti').value;
+      const container = document.getElementById('uploadSakitContainer');
+      const fileInput = document.getElementById('fileSakit');
+      container.style.display = (jenis === 'Cuti Sakit') ? 'block' : 'none';
+      if (jenis !== 'Cuti Sakit') fileInput.value = '';
+    }
+
+    function submitForm(event) {
+      event.preventDefault();
+      const form = document.getElementById('cutiForm');
+      const btn = document.getElementById('btnSubmit');
+      const status = document.getElementById('statusMessage');
+      
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      
+      // Tambahkan aksi khusus agar dibaca oleh doPost() di kode.gs
+      data.action = 'simpanDataCuti';
+
+      btn.disabled = true;
+      btn.innerText = "Sedang Mengirim...";
+      status.innerText = "Mohon tunggu...";
+
+      const fileInput = document.getElementById('fileSakit');
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          data.fileSakitData = e.target.result.split(',')[1];
+          data.fileSakitName = file.name;
+          kirimKeServer(data);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        kirimKeServer(data);
+      }
+    }
+
+    function kirimKeServer(data) {
+      const status = document.getElementById('statusMessage');
+      const btn = document.getElementById('btnSubmit');
+
+      fetch(WEB_APP_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8', 
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(res => {
+        if (res.status === 'success') {
+          status.innerHTML = `<span style="color:green">${res.message}</span>`;
+          alert(res.message);
+          document.getElementById('cutiForm').reset();
+          toggleSakitUpload();
+        } else {
+          status.innerHTML = `<span style="color:red">Gagal: ${res.message}</span>`;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        status.innerHTML = `<span style="color:red">Terjadi kesalahan koneksi/server.</span>`;
+      })
+      .finally(() => {
+        btn.disabled = false;
+        btn.innerText = "Kirim Permintaan Cuti";
+      });
+    }
+
+    function cariDataOlehNip() {
+  const nip = document.getElementById('inputNipCari').value.trim();
+  const status = document.getElementById('searchStatus');
+  const btnCari = document.getElementById('btnCari');
+
+  if (!nip) {
+    alert("Silakan masukkan NIP terlebih dahulu!");
+    return;
+  }
+
+  btnCari.disabled = true;
+  status.innerText = "Sedang mencari data...";
+  status.style.color = "blue";
+
+  // Menggunakan mode 'cors' dan redirect 'follow'
+  const targetUrl = `${WEB_APP_URL}?action=cari&nip=${encodeURIComponent(nip)}`;
+
+  fetch(targetUrl, {
+    method: 'GET',
+    redirect: 'follow'
+  })
+  .then(response => {
+    if (!response.ok) throw new Error("Jaringan bermasalah atau CORS terblokir");
+    return response.json();
+  })
+  .then(result => {
+    if (result && result.success) {
+      // 1. Simpan data hasil pencarian ke LocalStorage agar bisa dibaca halaman preview
+      localStorage.setItem('previewCutiData', JSON.stringify(result.data));
+
+      status.innerText = "Data ditemukan! Membuka halaman preview...";
+      status.style.color = "green";
+
+      // 2. Langsung redirect ke preview.html (sesuai file di GitHub Pages Anda atau GAS Web App)
+      // Jika preview.html ada di repo GitHub Pages yang sama:
+      window.location.href = `preview.html?nip=${encodeURIComponent(nip)}`;
+      
+      // ATAU jika preview disajikan langsung dari Google Apps Script:
+      // window.location.href = `${WEB_APP_URL}?page=preview&nip=${encodeURIComponent(nip)}`;
+    } else {
+      status.innerText = result.message || "NIP tidak ditemukan atau belum pernah mengajukan cuti.";
+      status.style.color = "red";
+      btnCari.disabled = false;
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    status.innerText = "Gagal mengambil data. Pastikan file diakses via web server/GitHub Pages (bukan file:///).";
+    status.style.color = "red";
+    btnCari.disabled = false;
+  });
+}
+  </script>
+</body>
+</html>
