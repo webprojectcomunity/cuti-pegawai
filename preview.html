@@ -6,37 +6,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Preview & Cetak Surat Cuti</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Library untuk Auto-Download PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
-    /* Optimasi untuk satu halaman F4 (21.5cm x 33cm) */
+    /* Mengunci ukuran box dan margin agar tidak berlebih */
+    * {
+      box-sizing: border-box;
+    }
+
     body { 
       background-color: #f0f2f5; 
-      padding: 15px 0; 
+      padding: 10px 0; 
       font-family: "Times New Roman", Times, serif; 
-      font-size: 11px; 
+      font-size: 12px;
       line-height: 1.1; 
     }
 
     .paper { 
       background: white; 
-      padding: 0.8cm 1.2cm; 
+      padding: 0.6cm 1.2cm; 
       width: 21.5cm; 
-      min-height: 33cm; 
+      height: 33cm; /* Mengunci tinggi tepat 33cm F4 */
+      max-height: 33cm;
       margin: auto;
       box-shadow: 0 0 10px rgba(0,0,0,0.15);
-      box-sizing: border-box;
-      overflow: hidden;
+      overflow: hidden; /* Mencegah elemen keluar halaman */
     }
 
     .table-custom {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 5px; 
+      margin-bottom: 3px; 
+      page-break-inside: avoid; /* Memaksa tabel tidak terpisah ke halaman 2 */
     }
 
     .table-custom td, .table-custom th {
       border: 1px solid black;
-      padding: 2px 5px; 
+      padding: 1px 4px; /* Padding lebih ramping */
       vertical-align: top;
+      font-size: 12px;
     }
 
     .section-header {
@@ -48,7 +58,12 @@
     .text-end { text-align: right; }
     .uppercase { text-transform: uppercase; }
     
-    p { margin-bottom: 2px; }
+    p { margin-bottom: 1px; }
+
+    /* Pengatur Jarak Tanda Tangan agar tidak memakan banyak tempat */
+    .space-ttd {
+      height: 45px; 
+    }
 
     /* Aturan Cetak (Print View) */
     @media print {
@@ -63,7 +78,7 @@
         margin: 0; 
         width: 21.5cm; 
         height: 33cm; 
-        padding: 0.8cm 1.2cm;
+        padding: 0.6cm 1.2cm;
       }
       .no-print { display: none !important; }
     }
@@ -71,16 +86,17 @@
 </head>
 <body>
 
-<!-- Panel Navigasi / Kontrol (Hanya Tampil di Layar, Hilang Saat Dicetak) -->
+<!-- Panel Navigasi / Kontrol -->
 <div class="container no-print mb-3 d-flex justify-content-between align-items-center" style="max-width: 21.5cm;">
   <a href="index.html" class="btn btn-sm btn-outline-secondary">← Kembali ke Form</a>
   <div>
-    <button onclick="window.print()" class="btn btn-sm btn-primary fw-bold me-1">🖨️ Cetak / Simpan PDF (F4)</button>
+    <button onclick="downloadPDF()" class="btn btn-sm btn-success fw-bold me-1">📥 Download PDF</button>
+    <button onclick="window.print()" class="btn btn-sm btn-primary fw-bold">🖨️ Cetak (F4)</button>
   </div>
 </div>
 
-<div class="paper">
-  <div style="margin-left: 65%; margin-bottom: 10px;">
+<div class="paper" id="areaCetak">
+  <div style="margin-left: 65%; margin-bottom: 4px;">
     <p>Karimun, <span id="tglSekarang"></span></p>
     <p>Kepada</p>
     <p>Yth. <b>Sekretaris KPU Karimun</b></p>
@@ -88,8 +104,9 @@
     <p style="margin-left: 20px;">Karimun</p>
   </div>
 
-  <h6 class="text-center fw-bold mb-3">FORMULIR PERMINTAAN DAN PEMBERIAN CUTI</h6>
+  <div class="text-center fw-bold mb-2" style="font-size: 13px;">FORMULIR PERMINTAAN DAN PEMBERIAN CUTI</div>
 
+  <!-- I. DATA PEGAWAI -->
   <table class="table-custom">
     <tr class="section-header"><td colspan="4">I. DATA PEGAWAI</td></tr>
     <tr>
@@ -110,6 +127,7 @@
     </tr>
   </table>
 
+  <!-- II. JENIS CUTI -->
   <table class="table-custom">
     <tr class="section-header"><td colspan="4">II. JENIS CUTI YANG DIAMBIL**</td></tr>
     <tr>
@@ -126,11 +144,13 @@
     </tr>
   </table>
 
+  <!-- III. ALASAN CUTI -->
   <table class="table-custom">
     <tr class="section-header"><td>III. ALASAN CUTI</td></tr>
-    <tr><td id="disp_alasan" style="height: 25px;">-</td></tr>
+    <tr><td id="disp_alasan" style="height: 18px;">-</td></tr>
   </table>
 
+  <!-- IV. LAMANYA CUTI -->
   <table class="table-custom">
     <tr class="section-header"><td colspan="6">IV. LAMANYA CUTI</td></tr>
     <tr>
@@ -143,6 +163,7 @@
     </tr>
   </table>
 
+  <!-- V. CATATAN CUTI -->
   <table class="table-custom">
     <tr class="section-header"><td colspan="5">V. CATATAN CUTI***</td></tr>
     <tr>
@@ -162,141 +183,121 @@
     <tr><td class="text-center">N</td><td class="text-center" id="disp_n">0</td><td></td><td>6. CUTI DI LUAR TANGGUNGAN NEGARA</td><td></td></tr>
   </table>
 
-  <table class="table-custom" border="1" style="width: 100%; border-collapse: collapse;">
-  <!-- Header Bagian -->
-  <tr class="section-header">
-    <td colspan="3"><b>VI. ALAMAT SELAMA MENJALANKAN CUTI</b></td>
-  </tr>
-
-  <!-- Baris Header Kolom & Tanda Tangan -->
-  <tr>
-    <td width="45%" class="text-center">Alamat Lengkap</td>
-    <td width="25%" class="text-center">Telpon</td>
-    
-    <!-- Kolom Tanda Tangan menggunakan rowspan="2" agar menyatu dari atas ke bawah -->
-   <td width="30%" rowspan="2" class="text-center" style="vertical-align: top; padding-top: 10px;">
-  <p style="margin: 0;">Hormat Saya,</p>
-  <br><br><br>
-  <p style="margin: 0;">(<b class="uppercase" id="sign_nama">NANDA DESTRIA, S.Kom</b>)</p>
-  <p style="margin: 0;">NIP. <span id="sign_nip">PPNPN</span></p>
-</td>
-
-  <!-- Baris Isi Alamat dan Telpon -->
-  <tr>
-    <td style="padding: 10px 5px;"><span id="disp_alamat">-</span></td>
-    <td class="text-center" style="padding: 10px 5px;"><span id="disp_telp">-</span></td>
-  </tr>
-</table>
-
-  <table class="table-custom" border="1" style="width: 100%; border-collapse: collapse;">
-  <!-- Header Bagian -->
-  <tr class="section-header">
-    <td colspan="4"><b>VII. PERTIMBANGAN ATASAN LANGSUNG **</b></td>
-  </tr>
-
-  <!-- Baris Pilihan Keputusan -->
-  <tr class="text-center" style="font-size: 0.9rem;">
-    <td width="15%">DISETUJUI</td>
-    <td width="20%">PERUBAHAN ****</td>
-    <td width="23%">DITANGGUHKAN ****</td>
-    <td width="42%">TIDAK DISETUJUI ****</td>
-  </tr>
-
-  <!-- Baris Centang/Checkmark -->
-  <tr class="text-center" style="height: 25px;">
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-
-  <!-- Baris Catatan & Tanda Tangan Atasan -->
-  <tr>
-    <!-- Area Catatan Atasan (Menggabungkan 3 Kolom Pertama) -->
-    <td colspan="3" style="vertical-align: top; padding: 10px; min-height: 80px;">
-      <span id="disp_catatanAtasan"></span>
-    </td>
-
-    <!-- Area Tanda Tangan Atasan (Kolom Ke-4) -->
-    <td class="text-center" style="vertical-align: top; padding: 10px 5px;">
-      <p style="margin: 0;" id="disp_jabatanAtasan">Plt. Kasubbag Keuangan Hukum dan SDM</p>
-      <br><br><br>
-      <p style="margin: 0;">( <b class="uppercase" id="disp_namaAtasan">-</b> )</p>
-      <p style="margin: 0;">NIP <span id="disp_nipAtasan">-</span></p>
-    </td>
-  </tr>
-</table>
-
-  <table class="table-custom" border="1" style="width: 100%; border-collapse: collapse;">
-  <!-- Header Bagian -->
-  <tr class="section-header">
-    <td colspan="4"><b>VIII. KEPUTUSAN PEJABAT YANG BERWENANG MEMBERIKAN CUTI **</b></td>
-  </tr>
-
-  <!-- Baris Pilihan Keputusan -->
-  <tr class="text-center" style="font-size: 0.9rem;">
-    <td width="15%">DISETUJUI</td>
-    <td width="20%">PERUBAHAN ****</td>
-    <td width="23%">DITANGGUHKAN ****</td>
-    <td width="42%">TIDAK DISETUJUI ****</td>
-  </tr>
-
-  <!-- Baris Centang/Checkmark -->
-  <tr class="text-center" style="height: 25px;">
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-
-  <!-- Baris Catatan & Tanda Tangan Pejabat -->
-  <tr>
-    <!-- Area Catatan Pejabat (Menggabungkan 3 Kolom Pertama) -->
-    <td colspan="3" style="vertical-align: top; padding: 10px; min-height: 80px;">
-      <span id="disp_catatanPejabat"></span>
-    </td>
-
-    <!-- Area Tanda Tangan Pejabat (Kolom Ke-4) -->
-    <td class="text-center" style="vertical-align: top; padding: 10px 5px;">
-      <p style="margin: 0;" id="disp_jabatanPejabat">Pejabat Berwenang,</p>
-      <br><br><br>
-      <p style="margin: 0;">( <b class="uppercase" id="disp_namaPejabat">-</b> )</p>
-      <p style="margin: 0;">NIP <span id="disp_nipPejabat">-</span></p>
-    </td>
-  </tr>
-</table>
+  <!-- VI. ALAMAT & PEMOHON -->
+  <table class="table-custom" border="1">
+    <tr class="section-header">
+      <td colspan="3"><b>VI. ALAMAT SELAMA MENJALANKAN CUTI</b></td>
+    </tr>
+    <tr>
+      <td width="45%" class="text-center">Alamat Lengkap</td>
+      <td width="25%" class="text-center">Telpon</td>
+      <td width="30%" rowspan="2" class="text-center" style="vertical-align: top; padding-top: 3px;">
+        <p style="margin: 0;">Hormat Saya,</p>
+        <div class="space-ttd"></div>
+        <p style="margin: 0;">(<b class="uppercase" id="sign_nama">-</b>)</p>
+        <p style="margin: 0;">NIP. <span id="sign_nip">-</span></p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 3px;"><span id="disp_alamat">-</span></td>
+      <td class="text-center" style="padding: 3px;"><span id="disp_telp">-</span></td>
+    </tr>
   </table>
 
-  <div style="font-size: 10px; margin-top: 5px; line-height: 1.4; font-family: Arial, sans-serif;">
-    <div style="margin-bottom: 2px;">Catatan:</div>
+  <!-- VII. ATASAN LANGSUNG -->
+  <table class="table-custom" border="1">
+    <tr class="section-header">
+      <td colspan="4"><b>VII. PERTIMBANGAN ATASAN LANGSUNG **</b></td>
+    </tr>
+    <tr class="text-center">
+      <td width="15%">DISETUJUI</td>
+      <td width="20%">PERUBAHAN ****</td>
+      <td width="23%">DITANGGUHKAN ****</td>
+      <td width="42%">TIDAK DISETUJUI ****</td>
+    </tr>
+    <tr class="text-center" style="height: 16px;">
+      <td></td><td></td><td></td><td></td>
+    </tr>
+    <tr>
+      <td colspan="3" style="vertical-align: top; padding: 3px;">
+        <span id="disp_catatanAtasan"></span>
+      </td>
+      <td class="text-center" style="vertical-align: top; padding: 3px;">
+        <p style="margin: 0;" id="disp_jabatanAtasan">Plt. Kasubbag Keuangan Hukum dan SDM</p>
+        <div class="space-ttd"></div>
+        <p style="margin: 0;">( <b class="uppercase" id="disp_namaAtasan">-</b> )</p>
+        <p style="margin: 0;">NIP <span id="disp_nipAtasan">-</span></p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- VIII. PEJABAT BERWENANG -->
+  <table class="table-custom" border="1">
+    <tr class="section-header">
+      <td colspan="4"><b>VIII. KEPUTUSAN PEJABAT YANG BERWENANG MEMBERIKAN CUTI **</b></td>
+    </tr>
+    <tr class="text-center">
+      <td width="15%">DISETUJUI</td>
+      <td width="20%">PERUBAHAN ****</td>
+      <td width="23%">DITANGGUHKAN ****</td>
+      <td width="42%">TIDAK DISETUJUI ****</td>
+    </tr>
+    <tr class="text-center" style="height: 16px;">
+      <td></td><td></td><td></td><td></td>
+    </tr>
+    <tr>
+      <td colspan="3" style="vertical-align: top; padding: 3px;">
+        <span id="disp_catatanPejabat"></span>
+      </td>
+      <td class="text-center" style="vertical-align: top; padding: 3px;">
+        <p style="margin: 0;" id="disp_jabatanPejabat">Pejabat Berwenang,</p>
+        <div class="space-ttd"></div>
+        <p style="margin: 0;">( <b class="uppercase" id="disp_namaPejabat">-</b> )</p>
+        <p style="margin: 0;">NIP <span id="disp_nipPejabat">-</span></p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- FOOTER CATATAN -->
+  <div style="font-size: 9.5px; margin-top: 3px; line-height: 1.2; font-family: Arial, sans-serif;">
+    <div style="margin-bottom: 1px;">Catatan:</div>
     <div>*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Coret yang tidak perlu</div>
     <div>**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pilih salah satu dengan (V)</div>
     <div>***&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Diisi pejabat kepegawaian</div>
     <div>****&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Diisi tanda centang &amp; alasan</div>
     <div>N&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Cuti tahun berjalan</div>
-    <div>N-1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Sisa cuti 1 tahun sebelumya</div>
-    <div>N-2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Sisa cuti 2 tahun sebelumya</div>
+    <div>N-1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Sisa cuti 1 tahun sebelumnya</div>
+    <div>N-2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Sisa cuti 2 tahun sebelumnya</div>
   </div>
 </div>
 
 <script>
-  // Fungsi untuk mengubah ISO String / Date ke format Indonesia (contoh: 18 April 2024)
   function formatTglIndo(stringTanggal) {
     if (!stringTanggal || stringTanggal === '-') return '-';
-    
     const dateObj = new Date(stringTanggal);
-    
-    // Periksa apakah konversi tanggal valid
-    if (isNaN(dateObj.getTime())) {
-      return stringTanggal; // Jika bukan format tanggal ISO, kembalikan teks aslinya
-    }
-
+    if (isNaN(dateObj.getTime())) return stringTanggal;
     const opsi = { day: 'numeric', month: 'long', year: 'numeric' };
     return dateObj.toLocaleDateString('id-ID', opsi);
   }
 
+  function downloadPDF() {
+    const element = document.getElementById('areaCetak');
+    const namaPegawai = document.getElementById('disp_nama').innerText || 'Pegawai';
+    
+    // Opsi html2pdf dioptimasi agar pas 1 halaman tanpa margin kosong berlebih
+    const options = {
+      margin:       0,
+      filename:     `Surat_Cuti_${namaPegawai}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+      jsPDF:        { unit: 'cm', format: [21.5, 33], orientation: 'portrait' },
+      pagebreak:    { mode: 'avoid-all' } // Mencegah pemotongan halaman
+    };
+
+    html2pdf().set(options).from(element).save();
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
-    // 1. Coba baca data dari localStorage atau sessionStorage
     let dataRaw = localStorage.getItem('previewCutiData') || sessionStorage.getItem('lastCutiData');
     
     if (!dataRaw) {
@@ -307,7 +308,6 @@
 
     const data = JSON.parse(dataRaw);
 
-    // Set Tanggal Cetak
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     document.getElementById('tglSekarang').innerText = new Date().toLocaleDateString('id-ID', options);
 
@@ -318,7 +318,7 @@
     document.getElementById('disp_masaKerja').innerText = (data.masaKerja || '-') + ' Tahun';
     document.getElementById('disp_unitKerja').innerText = data.unitKerja || 'KPU KABUPATEN KARIMUN';
     
-    // IV. Data Cuti (di-format menggunakan formatTglIndo)
+    // IV. Data Cuti
     document.getElementById('disp_alasan').innerText = data.alasan || '-';
     document.getElementById('disp_lama').innerText = data.lamaCuti || data.lama || '-';
     document.getElementById('disp_mulai').innerText = formatTglIndo(data.mulaiTanggal || data.tglMulai);
@@ -336,13 +336,14 @@
     document.getElementById('sign_nip').innerText = data.nip || '-';
 
     // VII & VIII. Data Atasan Langsung & Pejabat Berwenang
-document.getElementById('disp_jabatanAtasan').innerText = data.jabatanAtasan || 'Atasan Langsung,';
-document.getElementById('disp_namaAtasan').innerText = data.namaAtasan || '-';
-document.getElementById('disp_nipAtasan').innerText = data.nipAtasan || '-';
+    document.getElementById('disp_jabatanAtasan').innerText = data.jabatanAtasan || 'Plt. Kasubbag Keuangan Hukum dan SDM';
+    document.getElementById('disp_namaAtasan').innerText = data.namaAtasan || '-';
+    document.getElementById('disp_nipAtasan').innerText = data.nipAtasan || '-';
 
-document.getElementById('disp_jabatanPejabat').innerText = data.jabatanPejabat || 'Pejabat Berwenang,';
-document.getElementById('disp_namaPejabat').innerText = data.namaPejabat || '-';
-document.getElementById('disp_nipPejabat').innerText = data.nipPejabat || '-';
+    document.getElementById('disp_jabatanPejabat').innerText = data.jabatanPejabat || 'Pejabat Berwenang,';
+    document.getElementById('disp_namaPejabat').innerText = data.namaPejabat || '-';
+    document.getElementById('disp_nipPejabat').innerText = data.nipPejabat || '-';
+
     // II. Logika Centang Jenis Cuti
     const jenis = data.jenisCuti;
     const checks = {
