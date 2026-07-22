@@ -162,65 +162,110 @@
     <tr><td class="text-center">N</td><td class="text-center" id="disp_n">0</td><td></td><td>6. CUTI DI LUAR TANGGUNGAN NEGARA</td><td></td></tr>
   </table>
 
-  <table class="table-custom">
-    <tr class="section-header"><td colspan="3">VI. ALAMAT SELAMA MENJALANKAN CUTI</td></tr>
-    <tr>
-    <td width="5%">Alamat Lengkap</td>
-     <td width="5%">TELP</td>
-    
+  <table class="table-custom" border="1" style="width: 100%; border-collapse: collapse;">
+  <!-- Header Bagian -->
+  <tr class="section-header">
+    <td colspan="3"><b>VI. ALAMAT SELAMA MENJALANKAN CUTI</b></td>
   </tr>
-  <tr><td width="5%"><span id="disp_alamat">-</span>  
-   <td width="5%" id="disp_telp">-</td> 
-  </td> </tr>
 
+  <!-- Baris Header Kolom & Tanda Tangan -->
+  <tr>
+    <td width="45%" class="text-center">Alamat Lengkap</td>
+    <td width="25%" class="text-center">Telpon</td>
+    
+    <!-- Kolom Tanda Tangan menggunakan rowspan="2" agar menyatu dari atas ke bawah -->
+    <td width="30%" rowspan="2" class="text-center" style="vertical-align: top; padding-top: 10px;">
+      <p style="margin: 0;">Hormat Saya,</p>
+      <br><br><br>
+      <p style="margin: 0;">(<b class="uppercase" id="sign_nama">NANDA DESTRIA, S.Kom</b>)</p>
+      <p style="margin: 0;" id="sign_nip">PPNPN</p>
+    </td>
+  </tr>
 
-    <tr>
-      <td colspan="3" class="text-end" style="border: none;">
-        <div style="display: inline-block; text-align: center; margin-right: 40px; padding-top: 5px;">
-          <p>Hormat Saya,</p>
-          <br><br><br>
-          <p><b class="uppercase" id="sign_nama">-</b></p>
-          <p>NIP: <span id="sign_nip">-</span></p>
-        </div>
-      </td>
-    </tr>
-  </table>
+  <!-- Baris Isi Alamat dan Telpon -->
+  <tr>
+    <td style="padding: 10px 5px;"><span id="disp_alamat">-</span></td>
+    <td class="text-center" style="padding: 10px 5px;"><span id="disp_telp">-</span></td>
+  </tr>
+</table>
 
-  <table class="table-custom">
-    <tr class="section-header"><td colspan="4">VII. PERTIMBANGAN ATASAN LANGSUNG**</td></tr>
-    <tr class="text-center">
-      <td width="25%">DISETUJUI</td><td width="25%">PERUBAHAN</td><td width="25%">DITANGGUHKAN</td><td width="25%">TIDAK DISETUJUI</td>
-    </tr>
-    <tr><td style="height: 15px;"></td><td></td><td></td><td></td></tr>
-    <tr>
-      <td colspan="4" class="text-end" style="border: none;">
-        <div style="display: inline-block; text-align: center; width: 45%;">
-          <p id="disp_jabatanAtasan">Atasan Langsung,</p>
-          <br><br><br>
-          <p><b class="uppercase" id="disp_namaAtasan">-</b></p>
-          <p>NIP: <span id="disp_nipAtasan">-</span></p>
-        </div>
-      </td>
-    </tr>
-  </table>
+  <table class="table-custom" border="1" style="width: 100%; border-collapse: collapse;">
+  <!-- Header Bagian -->
+  <tr class="section-header">
+    <td colspan="4"><b>VII. PERTIMBANGAN ATASAN LANGSUNG **</b></td>
+  </tr>
 
-  <table class="table-custom">
-    <tr class="section-header"><td colspan="4">VIII. KEPUTUSAN PEJABAT BERWENANG**</td></tr>
-    <tr class="text-center">
-      <td width="25%">DISETUJUI</td><td width="25%">PERUBAHAN</td><td width="25%">DITANGGUHKAN</td><td width="25%">TIDAK DISETUJUI</td>
-    </tr>
-    <tr><td style="height: 15px;"></td><td></td><td></td><td></td></tr>
-    <tr>
-      <td colspan="4" class="text-end" style="border: none;">
-        <div style="display: inline-block; text-align: center; width: 45%;">
-          <p id="disp_jabatanPejabat">Pejabat Berwenang,</p>
-          <br><br><br>
-          <p><b class="uppercase" id="disp_namaPejabat">-</b></p>
-          <p>NIP: <span id="disp_nipPejabat">-</span></p>
-        </div>
-      </td>
-    </tr>
-  </table>
+  <!-- Baris Pilihan Keputusan -->
+  <tr class="text-center" style="font-size: 0.9rem;">
+    <td width="15%">DISETUJUI</td>
+    <td width="20%">PERUBAHAN ****</td>
+    <td width="23%">DITANGGUHKAN ****</td>
+    <td width="42%">TIDAK DISETUJUI ****</td>
+  </tr>
+
+  <!-- Baris Centang/Checkmark -->
+  <tr class="text-center" style="height: 25px;">
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+
+  <!-- Baris Catatan & Tanda Tangan Atasan -->
+  <tr>
+    <!-- Area Catatan Atasan (Menggabungkan 3 Kolom Pertama) -->
+    <td colspan="3" style="vertical-align: top; padding: 10px; min-height: 80px;">
+      <span id="disp_catatanAtasan"></span>
+    </td>
+
+    <!-- Area Tanda Tangan Atasan (Kolom Ke-4) -->
+    <td class="text-center" style="vertical-align: top; padding: 10px 5px;">
+      <p style="margin: 0;" id="disp_jabatanAtasan">Plt. Kasubbag Keuangan Hukum dan SDM</p>
+      <br><br><br>
+      <p style="margin: 0;">( <b class="uppercase" id="disp_namaAtasan">-</b> )</p>
+      <p style="margin: 0;">NIP <span id="disp_nipAtasan">-</span></p>
+    </td>
+  </tr>
+</table>
+
+  <table class="table-custom" border="1" style="width: 100%; border-collapse: collapse;">
+  <!-- Header Bagian -->
+  <tr class="section-header">
+    <td colspan="4"><b>VIII. KEPUTUSAN PEJABAT YANG BERWENANG MEMBERIKAN CUTI **</b></td>
+  </tr>
+
+  <!-- Baris Pilihan Keputusan -->
+  <tr class="text-center" style="font-size: 0.9rem;">
+    <td width="15%">DISETUJUI</td>
+    <td width="20%">PERUBAHAN ****</td>
+    <td width="23%">DITANGGUHKAN ****</td>
+    <td width="42%">TIDAK DISETUJUI ****</td>
+  </tr>
+
+  <!-- Baris Centang/Checkmark -->
+  <tr class="text-center" style="height: 25px;">
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+
+  <!-- Baris Catatan & Tanda Tangan Pejabat -->
+  <tr>
+    <!-- Area Catatan Pejabat (Menggabungkan 3 Kolom Pertama) -->
+    <td colspan="3" style="vertical-align: top; padding: 10px; min-height: 80px;">
+      <span id="disp_catatanPejabat"></span>
+    </td>
+
+    <!-- Area Tanda Tangan Pejabat (Kolom Ke-4) -->
+    <td class="text-center" style="vertical-align: top; padding: 10px 5px;">
+      <p style="margin: 0;" id="disp_jabatanPejabat">Pejabat Berwenang,</p>
+      <br><br><br>
+      <p style="margin: 0;">( <b class="uppercase" id="disp_namaPejabat">-</b> )</p>
+      <p style="margin: 0;">NIP <span id="disp_nipPejabat">-</span></p>
+    </td>
+  </tr>
+</table>
   </table>
 
   <div style="font-size: 10px; margin-top: 5px; line-height: 1.4; font-family: Arial, sans-serif;">
