@@ -43,12 +43,12 @@
               <th width="5%">No</th>
               <th>NIP</th>
               <th>Nama Pegawai</th>
-              <th class="text-center" width="10%">N-2</th>
-              <th class="text-center" width="10%">N-1</th>
-              <th class="text-center" width="10%">N (Berjalan)</th>
-              <th class="text-center" width="12%">Total Saldo</th>
-              <th class="text-center" width="10%">Tahun</th>
-              <th class="text-center" width="15%">Aksi</th>
+              <th class="text-center" width="8%">N-2</th>
+              <th class="text-center" width="8%">N-1</th>
+              <th class="text-center" width="8%">N (Berjalan)</th>
+              <th class="text-center" width="10%">Total Saldo</th>
+              <th class="text-center" width="8%">Tahun</th>
+              <th class="text-center" width="22%">Aksi</th>
             </tr>
           </thead>
           <tbody id="saldoTableBody">
@@ -61,7 +61,7 @@
     </div>
   </div>
 
-  <!-- Modal Form Input/Edit -->
+  <!-- Modal Form Input/Edit Saldo -->
   <div class="modal fade" id="modalSaldo" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -107,6 +107,45 @@
     </div>
   </div>
 
+  <!-- Modal Riwayat Cuti Pegawai -->
+  <div class="modal fade" id="modalRiwayat" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Rekapitulasi Riwayat Cuti: <span id="riwayatNamaPegawai"></span></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted mb-3">Daftar historis jenis cuti yang pernah diambil berdasarkan log pengajuan sistem.</p>
+          <div class="table-responsive">
+            <table class="table table-bordered table-striped align-middle">
+              <thead class="table-dark">
+                <tr>
+                  <th width="5%">No</th>
+                  <th>Tanggal Pengajuan</th>
+                  <th>Jenis Cuti</th>
+                  <th>Lama</th>
+                  <th>Mulai s.d. Selesai</th>
+                  <th>Alasan Cuti</th>
+                  <th>Alamat Selama Cuti</th>
+                  <th class="text-center">Lampiran / Surat</th>
+                </tr>
+              </thead>
+              <tbody id="riwayatTableBody">
+                <tr>
+                  <td colspan="8" class="text-center py-3">Memuat riwayat...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     // URL REST API EndPoint Web App Anda
@@ -114,9 +153,11 @@
 
     let rawDataSaldo = [];
     let modalInstance = null;
+    let modalRiwayatInstance = null;
 
     document.addEventListener('DOMContentLoaded', () => {
       modalInstance = new bootstrap.Modal(document.getElementById('modalSaldo'));
+      modalRiwayatInstance = new bootstrap.Modal(document.getElementById('modalRiwayat'));
       document.getElementById('modalTahun').value = new Date().getFullYear();
       loadData();
     });
@@ -128,7 +169,6 @@
         const result = await response.json();
         renderTable(result);
       } catch (err) {
-        // Fallback jika dibuka langsung di dalam lingkungan Apps Script (google.script.run)
         if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run
             .withSuccessHandler(renderTable)
@@ -163,16 +203,64 @@
           <td class="text-center"><span class="badge bg-success badge-saldo">${total} Hari</span></td>
           <td class="text-center">${item.tahun}</td>
           <td class="text-center">
-            <button class="btn btn-sm btn-warning text-white me-1" onclick="bukaModalEdit(${index})" title="Edit">
+            <button class="btn btn-sm btn-info text-white me-1 mb-1" onclick="bukaModalRiwayat('${item.nip}', '${item.nama}')" title="Riwayat Cuti">
+              <i class="bi bi-clock-history"></i> Riwayat
+            </button>
+            <button class="btn btn-sm btn-warning text-white me-1 mb-1" onclick="bukaModalEdit(${index})" title="Edit">
               <i class="bi bi-pencil-square"></i> Edit
             </button>
-            <button class="btn btn-sm btn-danger" onclick="konfirmasiHapus('${item.nip}', '${item.nama}')" title="Hapus">
+            <button class="btn btn-sm btn-danger mb-1" onclick="konfirmasiHapus('${item.nip}', '${item.nama}')" title="Hapus">
               <i class="bi bi-trash"></i>
             </button>
           </td>
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    // Fungsi Membuka Modal Riwayat Cuti
+    async function bukaModalRiwayat(nip, nama) {
+      document.getElementById('riwayatNamaPegawai').innerText = `${nama} (NIP: ${nip})`;
+      const tbodyRiwayat = document.getElementById('riwayatTableBody');
+      tbodyRiwayat.innerHTML = `<tr><td colspan="8" class="text-center py-3"><i>Memuat rekapitulasi riwayat cuti...</i></td></tr>`;
+      
+      modalRiwayatInstance.show();
+
+      try {
+        const response = await fetch(`${API_URL}?action=getRiwayatCuti&nip=${nip}`);
+        const res = await response.json();
+
+        if (!res.success || !res.data || !res.data.length) {
+          tbodyRiwayat.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">Belum ada catatan riwayat cuti untuk pegawai ini.</td></tr>`;
+          return;
+        }
+
+        tbodyRiwayat.innerHTML = '';
+        res.data.forEach((r, idx) => {
+          let linkFile = '-';
+          if (r.fileSakit && r.fileSakit.startsWith('http')) {
+            linkFile = `<a href="${r.fileSakit}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-earmark-pdf"></i> Lihat File</a>`;
+          } else if (r.fileSakit && r.fileSakit !== '-') {
+            linkFile = `<small class="text-muted">${r.fileSakit}</small>`;
+          }
+
+          const trR = document.createElement('tr');
+          trR.innerHTML = `
+            <td>${idx + 1}</td>
+            <td>${r.tanggalPengajuan}</td>
+            <td><b>${r.jenisCuti}</b></td>
+            <td><span class="badge bg-secondary">${r.lamaCuti} Hari</span></td>
+            <td>${r.mulaiTanggal} s.d. ${r.sampaiTanggal}</td>
+            <td>${r.alasan}</td>
+            <td><small>${r.alamat}</small></td>
+            <td class="text-center">${linkFile}</td>
+          `;
+          tbodyRiwayat.appendChild(trR);
+        });
+
+      } catch (err) {
+        tbodyRiwayat.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Gagal memuat riwayat: ${err}</td></tr>`;
+      }
     }
 
     function bukaModalTambah() {
