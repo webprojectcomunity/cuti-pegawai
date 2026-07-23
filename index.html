@@ -23,16 +23,21 @@
         
         <form id="cutiForm" onsubmit="submitForm(event)">
           <div class="section-title">I. DATA PEGAWAI</div>
-          <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="form-label">Nama</label>
-              <input type="text" class="form-control" name="nama" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">NIP</label>
-              <input type="text" class="form-control" name="nip" required>
-            </div>
-          </div>
+<div class="row mb-3">
+  <div class="col-md-6">
+    <label class="form-label">Nama Pegawai</label>
+    <!-- Menggunakan datalist agar bisa diketik untuk mencari atau diklik dari dropdown -->
+    <input class="form-control" list="listPegawai" name="nama" id="nama" placeholder="Ketik atau pilih nama..." required onchange="pilihNamaPegawai(this.value)">
+    <datalist id="listPegawai">
+      <!-- Opsi akan dimuat otomatis dari script -->
+    </datalist>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">NIP</label>
+    <!-- NIP dibuat readonly agar otomatis terisi berdasarkan nama yang dipilih -->
+    <input type="text" class="form-control" name="nip" id="nip" required readonly style="background-color: #e9ecef;">
+  </div>
+</div>
           <div class="row mb-3">
             <div class="col-md-4">
               <label class="form-label">Jabatan</label>
@@ -156,6 +161,64 @@
 
   <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
+
+    // Variabel global untuk menyimpan data daftar pegawai sementara
+    let dataPegawaiGlobal = [];
+
+    // Jalankan fungsi saat halaman pertama kali dimuat untuk menarik daftar nama dari database
+    window.addEventListener('DOMContentLoaded', (event) => {
+      muatDaftarPegawai();
+    });
+
+    // ==========================================
+    // FUNGSI MEMUAT DAFTAR PEGAWAI UNTUK DROPDOWN
+    // ==========================================
+    function muatDaftarPegawai() {
+      fetch(`${WEB_APP_URL}?action=getDaftarPegawai`, {
+        method: 'GET',
+        redirect: 'follow'
+      })
+      .then(response => response.json())
+      .then(result => {
+        if (result.success) {
+          dataPegawaiGlobal = result.data;
+          const datalist = document.getElementById('listPegawai');
+          if (datalist) {
+            datalist.innerHTML = '';
+            dataPegawaiGlobal.forEach(pegawai => {
+              const option = document.createElement('option');
+              option.value = pegawai.nama;
+              datalist.appendChild(option);
+            });
+          }
+        }
+      })
+      .catch(err => console.error("Gagal memuat daftar pegawai:", err));
+    }
+
+    // ==========================================
+    // FUNGSI AUTOFILL NIP BERDASARKAN NAMA YANG DIPILIH
+    // ==========================================
+    function pilihNamaPegawai(namaPilihan) {
+      const inputNip = document.getElementById('nip');
+      const cleanNama = namaPilihan.trim().toLowerCase();
+
+      if (!cleanNama) {
+        inputNip.value = '';
+        return;
+      }
+
+      const ditemukan = dataPegawaiGlobal.find(p => p.nama.toLowerCase() === cleanNama);
+
+      if (ditemukan) {
+        inputNip.value = ditemukan.nip;
+      } else {
+        inputNip.value = '';
+        if (namaPilihan.trim() !== "") {
+          alert("Nama tidak ditemukan di database. Pastikan memilih dari daftar yang tersedia.");
+        }
+      }
+    }
 
     function formatNomorHp(input) {
       let val = input.value.replace(/[^0-9]/g, '');
