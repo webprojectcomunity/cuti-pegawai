@@ -178,7 +178,15 @@
       const form = document.getElementById('cutiForm');
       const btn = document.getElementById('btnSubmit');
       const status = document.getElementById('statusMessage');
-      
+      const jenisCuti = document.getElementById('jenisCuti').value;
+      const fileInput = document.getElementById('fileSakit');
+
+      // Validasi Tambahan: Jika Cuti Sakit, file PDF Wajib di-upload
+      if (jenisCuti === 'Cuti Sakit' && fileInput.files.length === 0) {
+        alert("Harap unggah Surat Keterangan Sakit (Format PDF) terlebih dahulu!");
+        return;
+      }
+
       const formData = new FormData(form);
       const data = Object.fromEntries(formData.entries());
       
@@ -186,9 +194,8 @@
 
       btn.disabled = true;
       btn.innerText = "Sedang Mengirim...";
-      status.innerText = "Mohon tunggu...";
+      status.innerText = "Mohon tunggu, sedang memproses data dan unggahan berkas...";
 
-      const fileInput = document.getElementById('fileSakit');
       if (fileInput.files.length > 0) {
         const file = fileInput.files[0];
         const reader = new FileReader();
