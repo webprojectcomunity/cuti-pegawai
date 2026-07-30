@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Cuti Pegawai</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    body {
+      background-color: #f4f6f9;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .login-box {
+      max-width: 420px;
+      margin: 80px auto;
+    }
+    .card-profile {
+      border-left: 4px solid #0dcaf0;
+    }
+    .info-card {
+      background-color: #eef7ff;
+      border-left: 4px solid #0dcaf0;
+    }
+    .badge-saldo {
+      font-size: 0.9rem;
+    }
+    /* Style pendukung agar modal pop-up form cuti tampil luas & responsif */
+    .modal-cuti-body {
+      padding: 0;
+      height: 80vh;
+      overflow: hidden;
+    }
+    .iframe-form-cuti {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== HALAMAN LOGIN ==================== -->
+  <div id="loginSection" class="container login-box">
+    <div class="card shadow-lg border-0 rounded-3">
+      <div class="card-body p-4 text-center">
+        <div class="mb-3">
+          <i class="bi bi-person-badge-fill text-info" style="font-size: 3rem;"></i>
+        </div>
+        <h4 class="fw-bold mb-1">Login Pegawai</h4>
+        <p class="text-muted small mb-4">Masukkan NIP Anda untuk melihat riwayat cuti</p>
+
+        <form id="formLogin" onsubmit="handleLogin(event)">
+          <div class="form-floating mb-3 text-start">
+            <input type="text" class="form-control" id="loginNip" placeholder="Masukkan NIP" required>
+            <label for="loginNip"><i class="bi bi-card-text me-1"></i> NIP Pegawai</label>
+          </div>
+
+          <div class="form-floating mb-3 text-start">
+            <input type="password" class="form-control" id="loginPassword" placeholder="Password" value="123456" required>
+            <label for="loginPassword"><i class="bi bi-lock me-1"></i> Password / PIN</label>
+            <div class="form-text small">*Default demo password: <code>123456</code></div>
+          </div>
+
+          <div id="loginAlert" class="alert alert-danger py-2 d-none" role="alert"></div>
+
+          <button type="submit" id="btnLogin" class="btn btn-info text-white w-100 py-2 fw-semibold">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Masuk Sistem
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== HALAMAN DASHBOARD RIWAYAT ==================== -->
+  <div id="dashboardSection" class="container py-4 d-none">
+    
+    <!-- Navbar Header Dashboard -->
+    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-person-circle fs-2 text-info me-3"></i>
+        <div>
+          <h5 class="fw-bold mb-0" id="userNama">Loading...</h5>
+          <small class="text-muted">NIP: <span id="userNip">-</span></small>
+        </div>
+      </div>
+      
+      <!-- Group Tombol Navigasi -->
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm fw-semibold" onclick="bukaModalFormCuti()">
+          <i class="bi bi-plus-circle me-1"></i> Ajukan Cuti
+        </button>
+
+        <button class="btn btn-outline-danger btn-sm" onclick="handleLogout()">
+          <i class="bi bi-box-arrow-right me-1"></i> Keluar
+        </button>
+      </div>
+    </div>
+
+    <!-- Ringkasan Profil -->
+    <div class="card shadow-sm card-profile mb-4">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h6 class="fw-bold mb-1 text-primary"><i class="bi bi-info-circle me-1"></i> Informasi Akun</h6>
+            <p class="text-muted small mb-0">Halaman ini menampilkan seluruh saldo dan riwayat pengajuan cuti yang telah dicatat dalam sistem.</p>
+          </div>
+          <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <span class="badge bg-info fs-6 text-white" id="totalRiwayatBadge">0 Record</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Petunjuk Cuti (info-card) -->
+    <div class="card info-card shadow-sm mb-4">
+      <div class="card-body py-3">
+        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-info-circle text-info me-1"></i> Petunjuk Keterangan Saldo Cuti:</h6>
+        <div class="row g-2 text-secondary small">
+          <div class="col-md-3">
+            <span class="badge bg-secondary me-1">N-2</span> <b>Sisa Cuti 2 Tahun Lalu</b>
+          </div>
+          <div class="col-md-3">
+            <span class="badge bg-secondary me-1">N-1</span> <b>Sisa Cuti 1 Tahun Lalu</b>
+          </div>
+          <div class="col-md-3">
+            <span class="badge bg-primary me-1">N</span> <b>Hak Cuti Tahun Berjalan</b>
+          </div>
+          <div class="col-md-3">
+            <span class="badge bg-success me-1">Total Saldo</span> <b>Akumulasi (N-2 + N-1 + N)</b>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabel Saldo Cuti Pegawai -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white py-3">
+        <h6 class="m-0 fw-bold text-secondary"><i class="bi bi-wallet2 me-2"></i>Rincian Saldo Cuti Pegawai</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped align-middle mb-0">
+            <thead class="table-dark text-center align-middle">
+              <tr>
+                <th width="5%">No</th>
+                <th>NIP</th>
+                <th>Nama Pegawai</th>
+                <th width="12%">N-2<br><small class="fw-normal text-warning">(2 Thn Lalu)</small></th>
+                <th width="12%">N-1<br><small class="fw-normal text-warning">(1 Thn Lalu)</small></th>
+                <th width="12%">N<br><small class="fw-normal text-info">(Berjalan)</small></th>
+                <th width="15%">Total Saldo<br><small class="fw-normal text-success">(Akumulasi)</small></th>
+                <th width="10%">Tahun</th>
+              </tr>
+            </thead>
+            <tbody id="saldoTableBody">
+              <tr>
+                <td colspan="8" class="text-center py-4">Memuat data saldo...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabel Riwayat Cuti -->
+    <div class="card shadow-sm">
+      <div class="card-header bg-white py-3">
+        <h6 class="m-0 fw-bold text-secondary"><i class="bi bi-clock-history me-2"></i>Rekapitulasi Riwayat Cuti</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th width="5%" class="text-center">No</th>
+                <th>Tgl Pengajuan</th>
+                <th>Jenis Cuti</th>
+                <th class="text-center">Lama</th>
+                <th>Mulai s.d. Selesai</th>
+                <th>Alasan Cuti</th>
+                <th>Alamat Selama Cuti</th>
+                <th class="text-center" width="12%">Lampiran</th>
+              </tr>
+            </thead>
+            <tbody id="riwayatTableBody">
+              <!-- Data diisi via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== MODAL POP-UP FORM PENGAJUAN CUTI ==================== -->
+  <div class="modal fade" id="modalFormCuti" tabindex="-1" aria-labelledby="modalFormCutiLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white py-2">
+          <h5 class="modal-title fs-6" id="modalFormCutiLabel">
+            <i class="bi bi-file-earmark-plus me-2"></i>Form Pengajuan Cuti Online
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="reloadRiwayatModalClose()"></button>
+        </div>
+        <div class="modal-body modal-cuti-body">
+          <iframe id="iframeFormCuti" class="iframe-form-cuti" src="about:blank"></iframe>
+        </div>
+        <div class="modal-footer py-2 bg-light">
+          <small class="text-muted me-auto">*Pastikan semua isian form telah lengkap sebelum dikirim.</small>
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal" onclick="reloadRiwayatModalClose()">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
+    
+    let modalFormCutiInstance = null;
+
+    // Cek Session saat halaman pertama kali dibuka
+    document.addEventListener('DOMContentLoaded', () => {
+      modalFormCutiInstance = new bootstrap.Modal(document.getElementById('modalFormCuti'));
+
+      const activeNip = sessionStorage.getItem('logged_nip');
+      if (activeNip) {
+        showDashboard(activeNip);
+      }
+    });
+
+    // Fungsi Membuka Modal Pop-up Form Cuti
+    function bukaModalFormCuti() {
+      const activeNip = sessionStorage.getItem('logged_nip');
+      const iframe = document.getElementById('iframeFormCuti');
+      
+      iframe.src = `form_cuti.html?nip=${encodeURIComponent(activeNip)}`;
+      
+      modalFormCutiInstance.show();
+    }
+
+    // Mengoreksi/Memperbarui tabel riwayat saat modal pop-up ditutup
+    function reloadRiwayatModalClose() {
+      const activeNip = sessionStorage.getItem('logged_nip');
+      if (activeNip) {
+        showDashboard(activeNip);
+      }
+    }
+
+    // Proses Form Login (Memperbaiki Pengecekan Supaya User Tanpa Riwayat Tetap Bisa Login)
+    async function handleLogin(e) {
+      e.preventDefault();
+      const nip = document.getElementById('loginNip').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      const alertBox = document.getElementById('loginAlert');
+      const btnLogin = document.getElementById('btnLogin');
+
+      alertBox.classList.add('d-none');
+      btnLogin.disabled = true;
+      btnLogin.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Memeriksa NIP...`;
+
+      if (password !== "123456") {
+        alertBox.innerText = "Password / PIN salah!";
+        alertBox.classList.remove('d-none');
+        btnLogin.disabled = false;
+        btnLogin.innerHTML = `<i class="bi bi-box-arrow-in-right me-1"></i> Masuk Sistem`;
+        return;
+      }
+
+      try {
+        // Cek keberadaan pegawai via API Saldo terlebih dahulu (Master Data Pegawai)
+        const responseSaldo = await fetch(`${API_URL}?action=getSaldo&nip=${encodeURIComponent(nip)}`);
+        const resSaldo = await responseSaldo.json();
+
+        // Cek apakah NIP terdaftar di data saldo
+        const pegAdaInSaldo = resSaldo.success && resSaldo.data && resSaldo.data.length > 0;
+
+        if (pegAdaInSaldo) {
+          sessionStorage.setItem('logged_nip', nip);
+          showDashboard(nip);
+        } else {
+          // Fallback: Cek API Riwayat Cuti (jika data saldo tidak ada)
+          const responseRiwayat = await fetch(`${API_URL}?action=getRiwayatCuti&nip=${encodeURIComponent(nip)}`);
+          const resRiwayat = await responseRiwayat.json();
+
+          if (resRiwayat.success) {
+            sessionStorage.setItem('logged_nip', nip);
+            showDashboard(nip);
+          } else {
+            alertBox.innerText = `NIP (${nip}) tidak terdaftar dalam sistem.`;
+            alertBox.classList.remove('d-none');
+          }
+        }
+      } catch (err) {
+        alertBox.innerText = "Gagal terhubung ke server API.";
+        alertBox.classList.remove('d-none');
+      } finally {
+        btnLogin.disabled = false;
+        btnLogin.innerHTML = `<i class="bi bi-box-arrow-in-right me-1"></i> Masuk Sistem`;
+      }
+    }
+
+    // Tampilkan Halaman Dashboard & Load Data
+    async function showDashboard(nip) {
+      document.getElementById('loginSection').classList.add('d-none');
+      document.getElementById('dashboardSection').classList.remove('d-none');
+      
+      document.getElementById('userNip').innerText = nip;
+      
+      // Load Saldo Cuti dan Riwayat Cuti
+      loadSaldoPegawai(nip);
+      loadRiwayatPegawai(nip);
+    }
+
+    // Fungsi Mengambil Data Saldo Pegawai Pasca Login
+    async function loadSaldoPegawai(nip) {
+      const tbodySaldo = document.getElementById('saldoTableBody');
+      tbodySaldo.innerHTML = `<tr><td colspan="8" class="text-center py-3"><div class="spinner-border spinner-border-sm text-info me-1"></div> Memuat saldo cuti...</td></tr>`;
+
+      try {
+        const response = await fetch(`${API_URL}?action=getSaldo&nip=${encodeURIComponent(nip)}`);
+        const result = await response.json();
+
+        if (!result.success || !result.data || !result.data.length) {
+          tbodySaldo.innerHTML = `<tr><td colspan="8" class="text-center py-3 text-muted">Data saldo tidak ditemukan.</td></tr>`;
+          return;
+        }
+
+        // Filter saldo khusus NIP pegawai yang sedang login
+        const dataUser = result.data.filter(item => String(item.nip).trim() === String(nip).trim());
+        const targetData = dataUser.length ? dataUser : result.data;
+
+        // Set nama pegawai di header dashboard jika nama tersedia
+        if (targetData.length > 0 && targetData[0].nama) {
+          document.getElementById('userNama').innerText = targetData[0].nama;
+        }
+
+        tbodySaldo.innerHTML = '';
+        targetData.forEach((item, index) => {
+          const n2Val = Number(item.n2) || 0;
+          const n1Val = Number(item.n1) || 0;
+          const nVal = Number(item.n) || 0;
+          const totalSaldo = n2Val + n1Val + nVal;
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="text-center">${index + 1}</td>
+            <td><b>${item.nip}</b></td>
+            <td>${item.nama || '-'}</td>
+            <td class="text-center">${n2Val}</td>
+            <td class="text-center">${n1Val}</td>
+            <td class="text-center">${nVal}</td>
+            <td class="text-center"><span class="badge bg-success badge-saldo">${totalSaldo} Hari</span></td>
+            <td class="text-center">${item.tahun || '-'}</td>
+          `;
+          tbodySaldo.appendChild(tr);
+        });
+
+      } catch (err) {
+        tbodySaldo.innerHTML = `<tr><td colspan="8" class="text-center py-3 text-danger">Gagal memuat saldo: ${err}</td></tr>`;
+      }
+    }
+
+    // Fungsi Mengambil Data Riwayat Cuti Pegawai
+    async function loadRiwayatPegawai(nip) {
+      const tbody = document.getElementById('riwayatTableBody');
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-5">
+            <div class="spinner-border text-info" role="status"></div>
+            <p class="mt-2 text-muted mb-0">Memuat data riwayat Anda...</p>
+          </td>
+        </tr>
+      `;
+
+      try {
+        const response = await fetch(`${API_URL}?action=getRiwayatCuti&nip=${encodeURIComponent(nip)}`);
+        const res = await response.json();
+
+        if (res.success && res.data && res.data.length > 0) {
+          // Update nama jika belum terisi dari API saldo
+          if (document.getElementById('userNama').innerText === 'Loading...') {
+            document.getElementById('userNama').innerText = res.data[0].nama || 'Pegawai';
+          }
+          document.getElementById('totalRiwayatBadge').innerText = `${res.data.length} Pengajuan`;
+
+          tbody.innerHTML = '';
+          res.data.forEach((r, idx) => {
+            let linkFile = '-';
+            if (r.fileSakit && r.fileSakit.startsWith('http')) {
+              linkFile = `<a href="${r.fileSakit}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-earmark-pdf"></i> Lihat File</a>`;
+            } else if (r.fileSakit && r.fileSakit !== '-') {
+              linkFile = `<small class="text-muted">${r.fileSakit}</small>`;
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="text-center">${idx + 1}</td>
+              <td>${r.tanggalPengajuan || '-'}</td>
+              <td><span class="fw-semibold text-primary">${r.jenisCuti || '-'}</span></td>
+              <td class="text-center"><span class="badge bg-secondary">${r.lamaCuti || 0} Hari</span></td>
+              <td>${r.mulaiTanggal || '-'} <br><small class="text-muted">s.d.</small> ${r.sampaiTanggal || '-'}</td>
+              <td>${r.alasan || '-'}</td>
+              <td><small>${r.alamat || '-'}</small></td>
+              <td class="text-center">${linkFile}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } else {
+          // Jika pegawai belum pernah mengajukan cuti sama sekali
+          document.getElementById('totalRiwayatBadge').innerText = `0 Pengajuan`;
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                <i class="bi bi-inbox fs-3 d-block mb-1 text-secondary"></i>
+                Belum ada riwayat pengajuan cuti.
+              </td>
+            </tr>
+          `;
+        }
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Gagal mengambil data: ${err}</td></tr>`;
+      }
+    }
+
+    // Fungsi Logout
+    function handleLogout() {
+      sessionStorage.removeItem('logged_nip');
+      document.getElementById('dashboardSection').classList.add('d-none');
+      document.getElementById('loginSection').classList.remove('d-none');
+      document.getElementById('formLogin').reset();
+    }
+  </script>
+</body>
+</html>
