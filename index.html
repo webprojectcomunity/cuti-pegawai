@@ -544,7 +544,7 @@
     modalUploadACCInstance.show();
   }
 
-  // Proses Pengunggahan File Disetujui (Dengan Kompresi & Validasi Ukuran)
+// Proses Pengunggahan File Disetujui (Dengan Kompresi & Validasi Ukuran 10 MB)
   async function handleProcessUploadACC(e) {
     e.preventDefault();
     
@@ -559,7 +559,9 @@
     }
 
     let file = fileInput.files[0];
-    const MAX_ALLOWED_SIZE = 3 * 1024 * 1024; // Batas maksimal 3 MB untuk PDF
+    
+    // Batas maksimal berkas diubah menjadi 10 MB
+    const MAX_ALLOWED_SIZE = 10 * 1024 * 1024; 
 
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Memproses...`;
@@ -574,10 +576,10 @@
         file = await compressImage(file, 1200, 0.7);
       }
 
-      // 2. Validasi file PDF jika ukurannya melebihi batas maksimal (3MB)
+      // 2. Validasi jika ukurannya melebihi batas maksimal 10 MB
       if (file.size > MAX_ALLOWED_SIZE) {
         alertBox.className = 'alert alert-danger py-2 small';
-        alertBox.innerText = `Ukuran berkas (${(file.size / (1024*1024)).toFixed(2)} MB) terlalu besar! Maksimal 3 MB. Silakan kompres PDF Anda terlebih dahulu.`;
+        alertBox.innerText = `Ukuran berkas (${(file.size / (1024*1024)).toFixed(2)} MB) terlalu besar! Maksimal 10 MB. Silakan kompres PDF Anda terlebih dahulu.`;
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload`;
         return;
