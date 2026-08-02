@@ -61,7 +61,7 @@
           <div class="form-floating mb-3 text-start">
             <input type="password" class="form-control" id="loginPassword" placeholder="Password" value="123456" required autocomplete="current-password">
             <label for="loginPassword"><i class="bi bi-lock me-1"></i> Password / PIN</label>
-            <div class="form-text small">*Default demo password: <code>123456</code></div>
+           
           </div>
 
           <div id="loginAlert" class="alert alert-danger py-2 d-none" role="alert"></div>
@@ -354,7 +354,7 @@
     btnLogin.disabled = true;
     btnLogin.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Memeriksa NIP...`;
 
-    if (password !== "123456") {
+    if (password !== "2102123") {
       alertBox.innerText = "Password / PIN salah!";
       alertBox.classList.remove('d-none');
       btnLogin.disabled = false;
