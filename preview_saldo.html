@@ -20,12 +20,22 @@
 </head>
 <body>
   <div class="container">
+    
+    <!-- CONTAINER ALERT PENGINGAT ROLLOVER -->
+    <div id="alertRolloverContainer"></div>
+
     <div class="card card-custom p-4 mb-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="m-0 text-primary"><i class="bi bi-wallet2 me-2"></i>Manajemen Saldo Cuti Pegawai</h4>
-        <button class="btn btn-primary" onclick="bukaModalTambah()">
-          <i class="bi bi-plus-lg me-1"></i> Tambah Saldo Pegawai
-        </button>
+        <div>
+          <!-- TOMBOL ROLLOVER TAHUN BARU -->
+          <button class="btn btn-warning text-white me-2" id="btnRollover" onclick="jalankanRolloverTahunBaru()">
+            <i class="bi bi-arrow-repeat me-1"></i> Rollover Tahun Baru
+          </button>
+          <button class="btn btn-primary" onclick="bukaModalTambah()">
+            <i class="bi bi-plus-lg me-1"></i> Tambah Saldo Pegawai
+          </button>
+        </div>
       </div>
       
       <!-- Input Pencarian Data -->
@@ -107,7 +117,7 @@
     </div>
   </div>
 
-  <!-- Modal Riwayat Cuti Pegawai (9 Kolom) -->
+  <!-- Modal Riwayat Cuti Pegawai -->
   <div class="modal fade" id="modalRiwayat" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
@@ -129,7 +139,6 @@
                   <th>Alasan Cuti</th>
                   <th>Alamat Selama Cuti</th>
                   <th>Lampiran / Surat</th>
-                  <!-- KOLOM V DI SEBELAH LAMPIRAN -->
                   <th>Form Disetujui (Kolom V)</th>
                 </tr>
               </thead>
@@ -181,7 +190,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // URL REST API EndPoint Web App Anda
     const API_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
     const FOLDER_ID = '1eNgD7YvDMqpPtFMGmn2RIKmITduM9RK5';
 
@@ -203,7 +211,6 @@
         .replace(/'/g, "&#039;");
     }
 
-    // Helper Kompresi Gambar Menggunakan HTML5 Canvas
     function compressImage(file, maxWidth = 1200, quality = 0.7) {
       return new Promise((resolve) => {
         if (!file.type.startsWith('image/')) {
@@ -253,7 +260,6 @@
       loadData();
     });
 
-    // Mengambil Data Saldo via REST API (GET)
     async function loadData() {
       try {
         const response = await fetch(`${API_URL}?action=getSaldo`);
@@ -281,6 +287,10 @@
       }
 
       rawDataSaldo = response.data;
+      
+      // CEK PENGINGAT ROLLOVER SAAT DATA DIMUAT
+      cekPengingatRollover();
+
       rawDataSaldo.forEach((item, index) => {
         const total = (item.n2 || 0) + (item.n1 || 0) + (item.n || 0);
         const tr = document.createElement('tr');
@@ -309,7 +319,81 @@
       });
     }
 
-    // Fungsi Membuka Modal Riwayat Cuti (Render 9 Kolom)
+    // FUNGSI PENGINGAT ROLLOVER DI BAGIAN ATAS HALAMAN
+    function cekPengingatRollover() {
+      if (!rawDataSaldo || rawDataSaldo.length === 0) return;
+
+      const tahunSistem = new Date().getFullYear();
+      const tahunData = Number(rawDataSaldo[0].tahun) || tahunSistem;
+      const alertContainer = document.getElementById('alertRolloverContainer');
+
+      if (tahunSistem > tahunData) {
+        alertContainer.innerHTML = `
+          <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-3 me-3 text-warning"></i>
+            <div>
+              <h6 class="alert-heading fw-bold mb-1">Pengingat Pergantian Tahun!</h6>
+              <span>Saat ini sudah memasuki tahun <b>${tahunSistem}</b>, namun terdeteksi saldo cuti masih terdata untuk tahun <b>${tahunData}</b>. Silakan tekan tombol <b>"Rollover Tahun Baru"</b> di kanan atas untuk memperbarui saldo pegawai.</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        `;
+      } else {
+        alertContainer.innerHTML = '';
+      }
+    }
+
+    // FUNGSI ROLLOVER TAHUN BARU (DENGAN VALIDASI DATE)
+    async function jalankanRolloverTahunBaru() {
+      const today = new Date();
+      const tahunSistem = today.getFullYear();
+      const bulan = today.getMonth(); // 0 = Januari
+      const tanggal = today.getDate(); // 1 = Tanggal 1
+
+      // Ambil tahun data dari data pegawai saat ini
+      const tahunData = (rawDataSaldo && rawDataSaldo.length > 0) ? Number(rawDataSaldo[0].tahun) : tahunSistem;
+
+      // VALIDASI 1: Jika tahun data sudah sama/lebih besar dari tahun sistem
+      if (tahunData >= tahunSistem) {
+        alert(`Belum bisa melakukan rollover!\n\nData saldo saat ini sudah tercatat untuk tahun ${tahunData}. Rollover berikutnya hanya dapat dilakukan pada atau setelah tanggal 1 Januari ${tahunSistem + 1}.`);
+        return;
+      }
+
+      // VALIDASI 2: Jika belum memasuki tanggal 1 Januari tahun baru
+      if (bulan !== 0 || tanggal < 1) {
+        alert(`Belum bisa melakukan rollover!\n\nRollover tahun baru hanya dapat dilakukan mulai tanggal 1 Januari.`);
+        return;
+      }
+
+      // KONFIRMASI PROSES
+      const btn = document.getElementById('btnRollover');
+      if (confirm(`Apakah Anda yakin ingin memproses rollover saldo cuti ke tahun ${tahunSistem}?`)) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Memproses...`;
+
+        const payload = {
+          action: 'rolloverSaldo',
+          tahunBaru: tahunSistem
+        };
+
+        try {
+          const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+          });
+          const res = await response.json();
+          alert(res.message);
+          loadData(); // Reload tabel saldo & perbarui banner pengingat
+        } catch (err) {
+          alert("Gagal memproses rollover: " + err);
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = `<i class="bi bi-arrow-repeat me-1"></i> Rollover Tahun Baru`;
+        }
+      }
+    }
+
     async function bukaModalRiwayat(nip, nama) {
       activeRiwayatNip = nip;
       activeRiwayatNama = nama;
@@ -331,7 +415,6 @@
 
         tbodyRiwayat.innerHTML = '';
         res.data.forEach((r, idx) => {
-          // Kolom 8 - Lampiran
           let linkFile = '-';
           if (r.fileSakit && String(r.fileSakit).startsWith('http')) {
             linkFile = `<a href="${escapeHtml(r.fileSakit)}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-earmark-pdf"></i> Lihat File</a>`;
@@ -339,7 +422,6 @@
             linkFile = `<small class="text-muted">${escapeHtml(r.fileSakit)}</small>`;
           }
 
-          // Kolom 9 - Form Disetujui (Kolom V)
           let colFormACC = '';
           const linkACC = r.fileApproved || r.suratDisetujui;
 
@@ -390,7 +472,6 @@
       modalUploadACCInstance.show();
     }
 
-    // Proses Unggah File ACC ke Google Apps Script (Batas Max 10 MB)
     async function handleProcessUploadACC(e) {
       e.preventDefault();
       
@@ -405,7 +486,7 @@
       }
 
       let file = fileInput.files[0];
-      const MAX_ALLOWED_SIZE = 10 * 1024 * 1024; // Maksimal 10 MB
+      const MAX_ALLOWED_SIZE = 10 * 1024 * 1024;
 
       btnSubmit.disabled = true;
       btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Memproses...`;
@@ -470,7 +551,6 @@
                 btnSubmit.disabled = false;
                 btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload`;
                 
-                // Refresh data modal riwayat aktif
                 if (activeRiwayatNip) {
                   bukaModalRiwayat(activeRiwayatNip, activeRiwayatNama);
                 }
@@ -522,7 +602,6 @@
       modalInstance.show();
     }
 
-    // Menyimpan / Update Saldo via REST API (POST)
     async function simpanSaldo(e) {
       e.preventDefault();
       const btn = document.getElementById('btnSimpan');
@@ -564,7 +643,6 @@
       }
     }
 
-    // Menghapus Saldo via REST API (POST)
     async function konfirmasiHapus(nip, nama) {
       if (confirm(`Apakah Anda yakin ingin menghapus saldo untuk ${nama} (NIP: ${nip})?`)) {
         const payload = {
