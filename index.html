@@ -61,7 +61,6 @@
           <div class="form-floating mb-3 text-start">
             <input type="password" class="form-control" id="loginPassword" placeholder="Password" value="2102123" required autocomplete="current-password">
             <label for="loginPassword"><i class="bi bi-lock me-1"></i> Password / PIN</label>
-           
           </div>
 
           <div id="loginAlert" class="alert alert-danger py-2 d-none" role="alert"></div>
@@ -342,7 +341,7 @@
     }
   }
 
-  // Proses Form Login
+  // Proses Form Login (Validasi Strict NIP)
   async function handleLogin(e) {
     e.preventDefault();
     const nip = document.getElementById('loginNip').value.trim();
@@ -354,6 +353,7 @@
     btnLogin.disabled = true;
     btnLogin.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Memeriksa NIP...`;
 
+    // 1. Validasi Password/PIN
     if (password !== "2102123") {
       alertBox.innerText = "Password / PIN salah!";
       alertBox.classList.remove('d-none');
@@ -363,26 +363,35 @@
     }
 
     try {
+      let userFound = false;
+
+      // 2. Cek NIP ke API Saldo secara eksplisit
       const responseSaldo = await fetch(`${API_URL}?action=getSaldo&nip=${encodeURIComponent(nip)}`);
       const resSaldo = await responseSaldo.json();
 
-      const pegAdaInSaldo = resSaldo.success && resSaldo.data && resSaldo.data.length > 0;
+      if (resSaldo.success && Array.isArray(resSaldo.data)) {
+        userFound = resSaldo.data.some(item => String(item.nip).trim() === nip);
+      }
 
-      if (pegAdaInSaldo) {
-        sessionStorage.setItem('logged_nip', nip);
-        showDashboard(nip);
-      } else {
+      // 3. Jika tidak ditemukan di Saldo, coba verifikasi ke Riwayat Cuti
+      if (!userFound) {
         const responseRiwayat = await fetch(`${API_URL}?action=getRiwayatCuti&nip=${encodeURIComponent(nip)}`);
         const resRiwayat = await responseRiwayat.json();
 
-        if (resRiwayat.success && resRiwayat.data && resRiwayat.data.length > 0) {
-          sessionStorage.setItem('logged_nip', nip);
-          showDashboard(nip);
-        } else {
-          alertBox.innerText = `NIP (${nip}) tidak terdaftar dalam sistem.`;
-          alertBox.classList.remove('d-none');
+        if (resRiwayat.success && Array.isArray(resRiwayat.data)) {
+          userFound = resRiwayat.data.some(item => String(item.nip || '').trim() === nip);
         }
       }
+
+      // 4. Eksekusi Hasil Validasi NIP
+      if (userFound) {
+        sessionStorage.setItem('logged_nip', nip);
+        showDashboard(nip);
+      } else {
+        alertBox.innerText = `Login ditolak! NIP (${nip}) tidak terdaftar dalam sistem.`;
+        alertBox.classList.remove('d-none');
+      }
+
     } catch (err) {
       alertBox.innerText = "Gagal terhubung ke server API.";
       alertBox.classList.remove('d-none');
@@ -402,7 +411,7 @@
     loadRiwayatPegawai(nip);
   }
 
-  // Mengambil Data Saldo Pegawai Pasca Login
+  // Mengambil Data Saldo Pegawai Pasca Login (Hanya Filter NIP Terkait)
   async function loadSaldoPegawai(nip) {
     const tbodySaldo = document.getElementById('saldoTableBody');
     tbodySaldo.innerHTML = `<tr><td colspan="8" class="text-center py-3"><div class="spinner-border spinner-border-sm text-info me-1"></div> Memuat saldo cuti...</td></tr>`;
@@ -416,10 +425,15 @@
         return;
       }
 
-      const dataUser = result.data.filter(item => String(item.nip).trim() === String(nip).trim());
-      const targetData = dataUser.length ? dataUser : result.data;
+      // Filter ketat NIP (Dihapus fallback ke seluruh data)
+      const targetData = result.data.filter(item => String(item.nip).trim() === String(nip).trim());
 
-      if (targetData.length > 0 && targetData[0].nama) {
+      if (targetData.length === 0) {
+        tbodySaldo.innerHTML = `<tr><td colspan="8" class="text-center py-3 text-muted">Data saldo untuk NIP ini tidak ditemukan.</td></tr>`;
+        return;
+      }
+
+      if (targetData[0].nama) {
         document.getElementById('userNama').innerText = targetData[0].nama;
       }
 
@@ -450,7 +464,7 @@
     }
   }
 
-  // Mengambil Data Riwayat Cuti Pegawai
+  // Mengambil Data Riwayat Cuti Pegawai (Filter Strict NIP)
   async function loadRiwayatPegawai(nip) {
     const tbody = document.getElementById('riwayatTableBody');
     tbody.innerHTML = `
@@ -467,13 +481,29 @@
       const res = await response.json();
 
       if (res.success && res.data && res.data.length > 0) {
-        if (document.getElementById('userNama').innerText === 'Memuat...' && res.data[0].nama) {
-          document.getElementById('userNama').innerText = res.data[0].nama;
+        // Filter ekstra di client untuk memastikan hanya menampilkan riwayat NIP yang login
+        const dataUser = res.data.filter(r => String(r.nip || '').trim() === String(nip).trim());
+
+        if (dataUser.length === 0) {
+          document.getElementById('totalRiwayatBadge').innerText = `0 Pengajuan`;
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="9" class="text-center py-4 text-muted">
+                <i class="bi bi-inbox fs-3 d-block mb-1 text-secondary"></i>
+                Belum ada riwayat pengajuan cuti.
+              </td>
+            </tr>
+          `;
+          return;
         }
-        document.getElementById('totalRiwayatBadge').innerText = `${res.data.length} Pengajuan`;
+
+        if (document.getElementById('userNama').innerText === 'Memuat...' && dataUser[0].nama) {
+          document.getElementById('userNama').innerText = dataUser[0].nama;
+        }
+        document.getElementById('totalRiwayatBadge').innerText = `${dataUser.length} Pengajuan`;
 
         let htmlRows = '';
-        res.data.forEach((r, idx) => {
+        dataUser.forEach((r, idx) => {
           let linkFile = '-';
           if (r.fileSakit && String(r.fileSakit).startsWith('http')) {
             linkFile = `<a href="${escapeHtml(r.fileSakit)}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-earmark-pdf"></i> Lihat File</a>`;
@@ -544,7 +574,7 @@
     modalUploadACCInstance.show();
   }
 
-// Proses Pengunggahan File Disetujui (Dengan Kompresi & Validasi Ukuran 10 MB)
+  // Proses Pengunggahan File Disetujui (Dengan Kompresi & Validasi Ukuran 10 MB)
   async function handleProcessUploadACC(e) {
     e.preventDefault();
     
@@ -560,7 +590,7 @@
 
     let file = fileInput.files[0];
     
-    // Batas maksimal berkas diubah menjadi 10 MB
+    // Batas maksimal berkas 10 MB
     const MAX_ALLOWED_SIZE = 10 * 1024 * 1024; 
 
     btnSubmit.disabled = true;
