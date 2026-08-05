@@ -282,49 +282,46 @@
   </div>
 </div>
 <script>
- function formatTglIndo(stringTanggal) {
-  if (!stringTanggal || stringTanggal === '-') return '-';
-  
-  let str = stringTanggal.toString().trim();
-  const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  function formatTglIndo(stringTanggal) {
+    if (!stringTanggal || stringTanggal === '-') return '-';
+    
+    let str = stringTanggal.toString().trim();
+    const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
-  // 1. Jika string sudah mengandung nama Bulan Indonesia (misal: "22 Juli 2026 08:30:00")
-  for (let b of bulanIndo) {
-    if (str.includes(b)) {
-      // Ambil hanya pola "Tanggal Bulan Tahun" (membuang jam/menit jika ada di belakangnya)
-      let match = str.match(new RegExp(`\\d{1,2}\\s+${b}\\s+\\d{4}`));
-      if (match) return match[0];
-      return str; 
-    }
-  }
-
-  // 2. Jika berbentuk Date Standard / ISO (contoh: "2026-07-22")
-  let dateObj = new Date(str);
-  if (!isNaN(dateObj.getTime())) {
-    const opsi = { day: 'numeric', month: 'long', year: 'numeric' };
-    return dateObj.toLocaleDateString('id-ID', opsi);
-  }
-
-  // 3. Jika format tanggal berpemisah garis miring (contoh: "22/07/2026")
-  if (str.includes('/')) {
-    let parts = str.split(' ')[0].split('/');
-    if (parts.length === 3) {
-      // Asumsi format DD/MM/YYYY
-      let d = new Date(parts[2], parts[1] - 1, parts[0]);
-      if (!isNaN(d.getTime())) {
-        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    // 1. Jika string sudah mengandung nama Bulan Indonesia (misal: "22 Juli 2026 08:30:00")
+    for (let b of bulanIndo) {
+      if (str.includes(b)) {
+        let match = str.match(new RegExp(`\\d{1,2}\\s+${b}\\s+\\d{4}`));
+        if (match) return match[0];
+        return str; 
       }
     }
-  }
 
-  return str;
-}
+    // 2. Jika berbentuk Date Standard / ISO (contoh: "2026-07-22")
+    let dateObj = new Date(str);
+    if (!isNaN(dateObj.getTime())) {
+      const opsi = { day: 'numeric', month: 'long', year: 'numeric' };
+      return dateObj.toLocaleDateString('id-ID', opsi);
+    }
+
+    // 3. Jika format tanggal berpemisah garis miring (contoh: "22/07/2026")
+    if (str.includes('/')) {
+      let parts = str.split(' ')[0].split('/');
+      if (parts.length === 3) {
+        let d = new Date(parts[2], parts[1] - 1, parts[0]);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+      }
+    }
+
+    return str;
+  }
 
   function downloadPDF() {
     const element = document.getElementById('areaCetak');
     const namaPegawai = document.getElementById('disp_nama').innerText || 'Pegawai';
     
-    // Konfigurasi html2pdf yang terkunci ke F4 tanpa margin tambahan
     const options = {
       margin:       0,
       filename:     `Surat_Cuti_${namaPegawai}.pdf`,
@@ -337,77 +334,114 @@
     html2pdf().set(options).from(element).save();
   }
 
- document.addEventListener('DOMContentLoaded', function() {
-  let dataRaw = localStorage.getItem('previewCutiData') || sessionStorage.getItem('lastCutiData');
-  
-  if (!dataRaw) {
-    alert("Data cuti tidak ditemukan di sistem browser! Anda akan diarahkan kembali ke halaman pencarian.");
-    window.location.href = "index.html";
-    return;
-  }
+  document.addEventListener('DOMContentLoaded', function() {
+    let dataRaw = localStorage.getItem('previewCutiData') || sessionStorage.getItem('lastCutiData');
+    
+    if (!dataRaw) {
+      alert("Data cuti tidak ditemukan di sistem browser! Anda akan diarahkan kembali ke halaman pencarian.");
+      window.location.href = "index.html";
+      return;
+    }
 
-  const data = JSON.parse(dataRaw);
+    const data = JSON.parse(dataRaw);
 
-  // LOGIKA TANGGAL DARI TIMESTAMP SPREADSHEET
-  // Mengambil tanggal dari field timestamp/Timestamp data spreadsheet
- // ✅ KODE PERBAIKAN (Langsung oper tglInput ke formatTglIndo)
-let tglInput = data.Timestamp || data.timestamp || data.tglSekarang;
+    // LOGIKA TANGGAL DARI TIMESTAMP SPREADSHEET
+    let tglInput = data.Timestamp || data.timestamp || data.tglSekarang;
 
-if (tglInput) {
-  document.getElementById('tglSekarang').innerText = formatTglIndo(tglInput);
-} else {
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  document.getElementById('tglSekarang').innerText = new Date().toLocaleDateString('id-ID', options);
-}
+    if (tglInput) {
+      document.getElementById('tglSekarang').innerText = formatTglIndo(tglInput);
+    } else {
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('tglSekarang').innerText = new Date().toLocaleDateString('id-ID', options);
+    }
 
-  // I. Data Pegawai
-  document.getElementById('disp_nama').innerText = data.nama || '-';
-  document.getElementById('disp_nip').innerText = data.nip || '-';
-  document.getElementById('disp_jabatan').innerText = data.jabatan || '-';
-  document.getElementById('disp_masaKerja').innerText = (data.masaKerja || '-') + ' Tahun';
-  document.getElementById('disp_unitKerja').innerText = data.unitKerja || 'KPU KABUPATEN KARIMUN';
-  
-  // IV. Data Cuti
-  document.getElementById('disp_alasan').innerText = data.alasan || '-';
-  document.getElementById('disp_lama').innerText = data.lamaCuti || data.lama || '-';
-  document.getElementById('disp_mulai').innerText = formatTglIndo(data.mulaiTanggal || data.tglMulai);
-  document.getElementById('disp_sampai').innerText = formatTglIndo(data.sampaiTanggal || data.tglSelesai);
-  
-  // V. Saldo Cuti
-  document.getElementById('disp_n2').innerText = data.n2_saldo !== undefined ? data.n2_saldo : '0';
-  document.getElementById('disp_n1').innerText = data.n1_saldo !== undefined ? data.n1_saldo : '0';
-  document.getElementById('disp_n').innerText  = data.n_saldo  !== undefined ? data.n_saldo  : '0';
+    // I. Data Pegawai
+    document.getElementById('disp_nama').innerText = data.nama || '-';
+    document.getElementById('disp_nip').innerText = data.nip || '-';
+    document.getElementById('disp_jabatan').innerText = data.jabatan || '-';
+    document.getElementById('disp_masaKerja').innerText = (data.masaKerja || '-') + ' Tahun';
+    document.getElementById('disp_unitKerja').innerText = data.unitKerja || 'KPU KABUPATEN KARIMUN';
+    
+    // IV. Data Cuti
+    document.getElementById('disp_alasan').innerText = data.alasan || '-';
+    document.getElementById('disp_lama').innerText = data.lamaCuti || data.lama || '-';
+    document.getElementById('disp_mulai').innerText = formatTglIndo(data.mulaiTanggal || data.tglMulai);
+    document.getElementById('disp_sampai').innerText = formatTglIndo(data.sampaiTanggal || data.tglSelesai);
+    
+    // V. Saldo Cuti (Menampilkan Saldo Awal Sebelum Dipotong Cuti yang Diajukan)
+    let rawN2 = parseInt(data.n2_saldo) || 0;
+    let rawN1 = parseInt(data.n1_saldo) || 0;
+    let rawN  = parseInt(data.n_saldo)  || 0;
 
-  // VI. Data Alamat & Tanda Tangan Pemohon
-  document.getElementById('disp_alamat').innerText = data.alamat || '-';
-  document.getElementById('disp_telp').innerText = data.telepon || data.telp || '-';
-  document.getElementById('sign_nama').innerText = data.nama || '-';
-  document.getElementById('sign_nip').innerText = data.nip || '-';
+    // Ekstrak angka dari lama cuti (misal "3 Hari" -> 3)
+    let valLama = (data.lamaCuti || data.lama || "0").toString();
+    let lamaHari = parseInt(valLama.replace(/\D/g, '')) || 0;
 
-  // VII & VIII. Data Atasan Langsung & Pejabat Berwenang
-  document.getElementById('disp_jabatanAtasan').innerText = data.jabatanAtasan || 'Plt. Kasubbag Keuangan Hukum dan SDM';
-  document.getElementById('disp_namaAtasan').innerText = data.namaAtasan || '-';
-  document.getElementById('disp_nipAtasan').innerText = data.nipAtasan || '-';
+    // Hanya proses jika jenis cuti yang diambil adalah "Cuti Tahunan"
+    if (data.jenisCuti === "Cuti Tahunan" && lamaHari > 0) {
+      let sisaLama = lamaHari;
 
-  document.getElementById('disp_jabatanPejabat').innerText = data.jabatanPejabat || 'Pejabat Berwenang,';
-  document.getElementById('disp_namaPejabat').innerText = data.namaPejabat || '-';
-  document.getElementById('disp_nipPejabat').innerText = data.nipPejabat || '-';
+      // 1. Kembalikan ke N terlebih dahulu (Maksimal 12 hari)
+      const maxN = 12;
+      const butuhN = maxN - rawN;
+      if (butuhN > 0) {
+        let tambahN = Math.min(sisaLama, butuhN);
+        rawN += tambahN;
+        sisaLama -= tambahN;
+      }
 
-  // II. Logika Centang Jenis Cuti
-  const jenis = data.jenisCuti;
-  const checks = {
-    "Cuti Tahunan": "check_tahunan",
-    "Cuti Besar": "check_besar",
-    "Cuti Sakit": "check_sakit",
-    "Cuti Melahirkan": "check_melahirkan",
-    "Cuti Karena Alasan Penting": "check_penting",
-    "Cuti di Luar Tanggungan Negara": "check_luar"
-  };
+      // 2. Jika masih ada sisa hari, kembalikan ke N-1 (Maksimal 6 hari)
+      if (sisaLama > 0) {
+        const maxN1 = 6;
+        const butuhN1 = maxN1 - rawN1;
+        if (butuhN1 > 0) {
+          let tambahN1 = Math.min(sisaLama, butuhN1);
+          rawN1 += tambahN1;
+          sisaLama -= tambahN1;
+        }
+      }
 
-  if (checks[jenis] && document.getElementById(checks[jenis])) {
-    document.getElementById(checks[jenis]).innerText = "☑";
-  }
-});
+      // 3. Jika masih ada sisa hari, sisanya dikembalikan ke N-2
+      if (sisaLama > 0) {
+        rawN2 += sisaLama;
+      }
+    }
+
+    // Tampilkan nilai saldo awal (sebelum dipotong) ke tabel formulir
+    document.getElementById('disp_n2').innerText = rawN2;
+    document.getElementById('disp_n1').innerText = rawN1;
+    document.getElementById('disp_n').innerText  = rawN;
+
+    // VI. Data Alamat & Tanda Tangan Pemohon
+    document.getElementById('disp_alamat').innerText = data.alamat || '-';
+    document.getElementById('disp_telp').innerText = data.telepon || data.telp || '-';
+    document.getElementById('sign_nama').innerText = data.nama || '-';
+    document.getElementById('sign_nip').innerText = data.nip || '-';
+
+    // VII & VIII. Data Atasan Langsung & Pejabat Berwenang
+    document.getElementById('disp_jabatanAtasan').innerText = data.jabatanAtasan || 'Plt. Kasubbag Keuangan Hukum dan SDM';
+    document.getElementById('disp_namaAtasan').innerText = data.namaAtasan || '-';
+    document.getElementById('disp_nipAtasan').innerText = data.nipAtasan || '-';
+
+    document.getElementById('disp_jabatanPejabat').innerText = data.jabatanPejabat || 'Pejabat Berwenang,';
+    document.getElementById('disp_namaPejabat').innerText = data.namaPejabat || '-';
+    document.getElementById('disp_nipPejabat').innerText = data.nipPejabat || '-';
+
+    // II. Logika Centang Jenis Cuti
+    const jenis = data.jenisCuti;
+    const checks = {
+      "Cuti Tahunan": "check_tahunan",
+      "Cuti Besar": "check_besar",
+      "Cuti Sakit": "check_sakit",
+      "Cuti Melahirkan": "check_melahirkan",
+      "Cuti Karena Alasan Penting": "check_penting",
+      "Cuti di Luar Tanggungan Negara": "check_luar"
+    };
+
+    if (checks[jenis] && document.getElementById(checks[jenis])) {
+      document.getElementById(checks[jenis]).innerText = "☑";
+    }
+  });
 </script>
 </body>
 </html>
