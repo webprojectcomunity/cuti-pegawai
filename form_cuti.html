@@ -183,364 +183,384 @@
     </div>
   </div>
 
-  <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
+ <script>
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
 
-    let dataPegawaiGlobal = [];
+  let dataPegawaiGlobal = [];
 
-    window.addEventListener('DOMContentLoaded', () => {
-      inialisasiSesiLogin();
-      muatDaftarPegawai();
-    });
+  window.addEventListener('DOMContentLoaded', () => {
+    inialisasiSesiLogin();
+    muatDaftarPegawai();
+  });
 
-    function inialisasiSesiLogin() {
-      const loggedNip = sessionStorage.getItem('logged_nip') || localStorage.getItem('logged_nip');
-      const loggedNama = sessionStorage.getItem('logged_nama') || localStorage.getItem('logged_nama');
+  function inialisasiSesiLogin() {
+    const loggedNip = sessionStorage.getItem('logged_nip') || localStorage.getItem('logged_nip');
+    const loggedNama = sessionStorage.getItem('logged_nama') || localStorage.getItem('logged_nama');
 
-      const inputNip = document.getElementById('nip');
-      const inputNama = document.getElementById('nama');
-      const inputNipCari = document.getElementById('inputNipCari');
+    const inputNip = document.getElementById('nip');
+    const inputNama = document.getElementById('nama');
+    const inputNipCari = document.getElementById('inputNipCari');
 
-      if (loggedNip) {
-        inputNip.value = loggedNip;
-        if (inputNipCari) inputNipCari.value = loggedNip;
-      }
-
-      if (loggedNama) {
-        inputNama.value = loggedNama;
-        inputNama.readOnly = true;
-        inputNama.style.backgroundColor = '#e9ecef';
-      }
+    if (loggedNip) {
+      if (inputNip) inputNip.value = loggedNip;
+      if (inputNipCari) inputNipCari.value = loggedNip;
     }
 
-    function muatDaftarPegawai() {
-      fetch(`${WEB_APP_URL}?action=getDaftarPegawai`, {
-        method: 'GET',
-        redirect: 'follow'
-      })
-      .then(response => response.json())
-      .then(result => {
-        if (result && result.success) {
-          dataPegawaiGlobal = result.data;
-          const datalist = document.getElementById('listPegawai');
-          if (datalist) {
-            datalist.innerHTML = '';
-            dataPegawaiGlobal.forEach(pegawai => {
-              const option = document.createElement('option');
-              option.value = pegawai.nama;
-              datalist.appendChild(option);
-            });
-          }
+    if (loggedNama && inputNama) {
+      inputNama.value = loggedNama;
+      inputNama.readOnly = true;
+      inputNama.style.backgroundColor = '#e9ecef';
+    }
+  }
 
-          const loggedNip = sessionStorage.getItem('logged_nip') || localStorage.getItem('logged_nip');
-          const inputNama = document.getElementById('nama');
-          if (loggedNip && !inputNama.value) {
-            const matched = dataPegawaiGlobal.find(p => String(p.nip).trim() === String(loggedNip).trim());
-            if (matched) {
-              inputNama.value = matched.nama;
-              inputNama.readOnly = true;
-              inputNama.style.backgroundColor = '#e9ecef';
-            }
+  function muatDaftarPegawai() {
+    fetch(`${WEB_APP_URL}?action=getDaftarPegawai`, {
+      method: 'GET',
+      redirect: 'follow'
+    })
+    .then(response => response.json())
+    .then(result => {
+      if (result && result.success) {
+        dataPegawaiGlobal = result.data;
+        const datalist = document.getElementById('listPegawai');
+        if (datalist) {
+          datalist.innerHTML = '';
+          dataPegawaiGlobal.forEach(pegawai => {
+            const option = document.createElement('option');
+            option.value = pegawai.nama;
+            datalist.appendChild(option);
+          });
+        }
+
+        const loggedNip = sessionStorage.getItem('logged_nip') || localStorage.getItem('logged_nip');
+        const inputNama = document.getElementById('nama');
+        if (loggedNip && inputNama && !inputNama.value) {
+          const matched = dataPegawaiGlobal.find(p => String(p.nip).trim() === String(loggedNip).trim());
+          if (matched) {
+            inputNama.value = matched.nama;
+            inputNama.readOnly = true;
+            inputNama.style.backgroundColor = '#e9ecef';
           }
         }
-      })
-      .catch(err => console.error("Gagal memuat daftar pegawai:", err));
+      }
+    })
+    .catch(err => console.error("Gagal memuat daftar pegawai:", err));
+  }
+
+  function pilihNamaPegawai(namaPilihan) {
+    const inputNip = document.getElementById('nip');
+    const cleanNama = namaPilihan.trim().toLowerCase();
+
+    if (!cleanNama) {
+      if (inputNip) inputNip.value = '';
+      return;
     }
 
-    function pilihNamaPegawai(namaPilihan) {
-      const inputNip = document.getElementById('nip');
-      const cleanNama = namaPilihan.trim().toLowerCase();
-
-      if (!cleanNama) {
-        inputNip.value = '';
-        return;
-      }
-
-      const ditemukan = dataPegawaiGlobal.find(p => p.nama.toLowerCase() === cleanNama);
-      if (ditemukan) {
-        inputNip.value = ditemukan.nip;
-      } else {
-        inputNip.value = '';
-        if (namaPilihan.trim() !== "") {
-          alert("Nama tidak ditemukan di database. Pastikan memilih dari daftar yang tersedia.");
-        }
+    const ditemukan = dataPegawaiGlobal.find(p => p.nama.toLowerCase() === cleanNama);
+    if (ditemukan) {
+      if (inputNip) inputNip.value = ditemukan.nip;
+    } else {
+      if (inputNip) inputNip.value = '';
+      if (namaPilihan.trim() !== "") {
+        alert("Nama tidak ditemukan di database. Pastikan memilih dari daftar yang tersedia.");
       }
     }
+  }
 
-    function formatNomorHp(input) {
-      let val = input.value.replace(/[^0-9]/g, '');
-      if (val.startsWith('0')) {
-        val = val.substring(1);
-      }
-      input.value = val;
+  function formatNomorHp(input) {
+    let val = input.value.replace(/[^0-9]/g, '');
+    if (val.startsWith('0')) val = val.substring(1);
+    input.value = val;
+  }
+
+  function toggleSakitUpload() {
+    const jenis = document.getElementById('jenisCuti').value;
+    const container = document.getElementById('uploadSakitContainer');
+    const fileInput = document.getElementById('fileSakit');
+    
+    if (container) container.style.display = (jenis === 'Cuti Sakit') ? 'block' : 'none';
+    if (jenis !== 'Cuti Sakit' && fileInput) {
+      fileInput.value = '';
+      const infoLama = document.getElementById('infoFileLama');
+      if (infoLama) infoLama.innerText = '';
+    }
+  }
+
+  // ==========================================================
+  // EDIT DATA CUTI (MENGAMBIL DATA & MEMASUKKAN KE FORM)
+  // ==========================================================
+  function editDataCuti() {
+    const nipInput = document.getElementById('nip');
+    const nip = nipInput ? nipInput.value.trim() : '';
+    const status = document.getElementById('statusMessage');
+    const btnEdit = document.getElementById('btnEdit');
+
+    if (!nip) {
+      alert("NIP tidak ditemukan. Silakan login kembali atau pastikan NIP terisi!");
+      return;
     }
 
-    function toggleSakitUpload() {
-      const jenis = document.getElementById('jenisCuti').value;
-      const container = document.getElementById('uploadSakitContainer');
-      const fileInput = document.getElementById('fileSakit');
-      
-      container.style.display = (jenis === 'Cuti Sakit') ? 'block' : 'none';
-      if (jenis !== 'Cuti Sakit') {
-        fileInput.value = '';
-        const infoLama = document.getElementById('infoFileLama');
-        if (infoLama) infoLama.innerText = '';
-      }
-    }
-
-    // ==========================================================
-    // FUNGSI UTAMA: EDIT DATA CUTI (MENGAMBIL DATA & MEMASUKKAN KE FORM)
-    // ==========================================================
-    function editDataCuti() {
-      const nip = document.getElementById('nip').value.trim();
-      const status = document.getElementById('statusMessage');
-      const btnEdit = document.getElementById('btnEdit');
-
-      if (!nip) {
-        alert("NIP tidak ditemukan. Silakan login kembali atau pastikan NIP terisi!");
-        return;
-      }
-
-      btnEdit.disabled = true;
+    if (btnEdit) btnEdit.disabled = true;
+    if (status) {
       status.innerText = "Mencari data cuti untuk diedit...";
       status.style.color = "blue";
+    }
 
-      // Panggil backend untuk mencari data berdasarkan NIP
-      fetch(`${WEB_APP_URL}?action=cari&nip=${encodeURIComponent(nip)}`, {
-        method: 'GET',
-        redirect: 'follow'
-      })
-      .then(res => res.json())
-      .then(result => {
-        if (result && result.success && result.data) {
-          const data = result.data;
-          
-          // Isi seluruh kolom input dengan data yang ditemukan
-          tampilkanDataKeForm(data);
-
+    fetch(`${WEB_APP_URL}?action=cari&nip=${encodeURIComponent(nip)}`, {
+      method: 'GET',
+      redirect: 'follow'
+    })
+    .then(res => res.json())
+    .then(result => {
+      if (result && result.success && result.data) {
+        tampilkanDataKeForm(result.data);
+        if (status) {
           status.innerText = "Data berhasil dimuat! Silakan ubah formulir di atas lalu tekan 'Perbarui Data Cuti'.";
           status.style.color = "green";
-        } else {
+        }
+      } else {
+        if (status) {
           status.innerText = result.message || "Data cuti tidak ditemukan untuk di-edit.";
           status.style.color = "red";
         }
-      })
-      .catch(err => {
-        console.error(err);
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      if (status) {
         status.innerText = "Gagal mengambil data untuk di-edit. Periksa koneksi Anda.";
         status.style.color = "red";
-      })
-      .finally(() => {
-        btnEdit.disabled = false;
-      });
-    }
-
-    // Helper untuk memasukkan data objek ke masing-masing elemen HTML Input
-    function tampilkanDataKeForm(data) {
-      document.getElementById('editId').value = data.id || data.rowId || data.nip || '';
-
-      if (data.nama) document.getElementById('nama').value = data.nama;
-      if (data.nip) document.getElementById('nip').value = data.nip;
-      if (data.jabatan) document.getElementById('jabatan').value = data.jabatan;
-      if (data.masaKerja) document.getElementById('masaKerja').value = data.masaKerja;
-      if (data.unitKerja) document.getElementById('unitKerja').value = data.unitKerja;
-      if (data.jenisCuti) document.getElementById('jenisCuti').value = data.jenisCuti;
-      if (data.alasan) document.getElementById('alasan').value = data.alasan;
-      if (data.lamaCuti) document.getElementById('lamaCuti').value = data.lamaCuti;
-
-      // Format tanggal ke YYYY-MM-DD
-      if (data.mulaiTanggal) document.getElementById('mulaiTanggal').value = formatTanggal(data.mulaiTanggal);
-      if (data.sampaiTanggal) document.getElementById('sampaiTanggal').value = formatTanggal(data.sampaiTanggal);
-
-      if (data.alamat) document.getElementById('alamat').value = data.alamat;
-      
-      // Sanitasi nomor HP (hilangkan prefiks +62 atau 0)
-      if (data.telepon) {
-        let hp = String(data.telepon).replace(/[^0-9]/g, '');
-        if (hp.startsWith('62')) hp = hp.substring(2);
-        if (hp.startsWith('0')) hp = hp.substring(1);
-        document.getElementById('inputTelepon').value = hp;
       }
+    })
+    .finally(() => {
+      if (btnEdit) btnEdit.disabled = false;
+    });
+  }
 
-      if (data.jabatanAtasan) document.getElementById('jabatanAtasan').value = data.jabatanAtasan;
-      if (data.namaAtasan) document.getElementById('namaAtasan').value = data.namaAtasan;
-      if (data.nipAtasan) document.getElementById('nipAtasan').value = data.nipAtasan;
+  function tampilkanDataKeForm(data) {
+    // Simpan posisi baris (rowIndex) ke input hidden editId
+    const editIdInput = document.getElementById('editId');
+    if (editIdInput) editIdInput.value = data.rowIndex || data.rowId || data.id || '';
 
-      if (data.jabatanPejabat) document.getElementById('jabatanPejabat').value = data.jabatanPejabat;
-      if (data.namaPejabat) document.getElementById('namaPejabat').value = data.namaPejabat;
-      if (data.nipPejabat) document.getElementById('nipPejabat').value = data.nipPejabat;
+    if (data.nama) document.getElementById('nama').value = data.nama;
+    if (data.nip) document.getElementById('nip').value = data.nip;
+    if (data.jabatan) document.getElementById('jabatan').value = data.jabatan;
+    if (data.masaKerja) document.getElementById('masaKerja').value = data.masaKerja;
+    if (data.unitKerja) document.getElementById('unitKerja').value = data.unitKerja;
+    if (data.jenisCuti) document.getElementById('jenisCuti').value = data.jenisCuti;
+    if (data.alasan) document.getElementById('alasan').value = data.alasan;
+    if (data.lamaCuti) document.getElementById('lamaCuti').value = data.lamaCuti;
 
-      toggleSakitUpload();
+    if (data.mulaiTanggal) document.getElementById('mulaiTanggal').value = formatTanggal(data.mulaiTanggal);
+    if (data.sampaiTanggal) document.getElementById('sampaiTanggal').value = formatTanggal(data.sampaiTanggal);
 
-      if (data.fileSakitUrl) {
-        const infoLama = document.getElementById('infoFileLama');
-        if (infoLama) {
-          infoLama.innerHTML = `*Berkas sebelumnya sudah diunggah. Biarkan kosong jika tidak ingin mengganti PDF.`;
-        }
+    if (data.alamat) document.getElementById('alamat').value = data.alamat;
+    
+    if (data.telepon || data.inputTelepon) {
+      let hp = String(data.telepon || data.inputTelepon).replace(/[^0-9]/g, '');
+      if (hp.startsWith('62')) hp = hp.substring(2);
+      if (hp.startsWith('0')) hp = hp.substring(1);
+      const telpElem = document.getElementById('inputTelepon') || document.getElementById('telepon');
+      if (telpElem) telpElem.value = hp;
+    }
+
+    if (data.jabatanAtasan) document.getElementById('jabatanAtasan').value = data.jabatanAtasan;
+    if (data.namaAtasan) document.getElementById('namaAtasan').value = data.namaAtasan;
+    if (data.nipAtasan) document.getElementById('nipAtasan').value = data.nipAtasan;
+
+    if (data.jabatanPejabat) document.getElementById('jabatanPejabat').value = data.jabatanPejabat;
+    if (data.namaPejabat) document.getElementById('namaPejabat').value = data.namaPejabat;
+    if (data.nipPejabat) document.getElementById('nipPejabat').value = data.nipPejabat;
+
+    toggleSakitUpload();
+
+    if (data.fileSakitUrl) {
+      const infoLama = document.getElementById('infoFileLama');
+      if (infoLama) {
+        infoLama.innerHTML = `*Berkas sebelumnya sudah diunggah. Biarkan kosong jika tidak ingin mengganti PDF.`;
       }
-
-      // Ubah Tampilan Tombol
-      document.getElementById('btnSubmit').innerHTML = `<i class="bi bi-save-fill me-1"></i> Perbarui Data Cuti`;
-      document.getElementById('btnSubmit').classList.remove('btn-primary');
-      document.getElementById('btnSubmit').classList.add('btn-success');
-      
-      document.getElementById('btnEdit').style.display = 'none';
-      document.getElementById('btnBatalEdit').style.display = 'block';
-
-      // Scroll ke bagian atas form
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Helper format tanggal ke standar input date HTML (YYYY-MM-DD)
-    function formatTanggal(strDate) {
-      if (!strDate) return '';
-      const d = new Date(strDate);
-      if (isNaN(d.getTime())) return strDate;
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+    const btnSubmit = document.getElementById('btnSubmit');
+    if (btnSubmit) {
+      btnSubmit.innerHTML = `<i class="bi bi-save-fill me-1"></i> Perbarui Data Cuti`;
+      btnSubmit.classList.remove('btn-primary');
+      btnSubmit.classList.add('btn-success');
     }
+    
+    if (document.getElementById('btnEdit')) document.getElementById('btnEdit').style.display = 'none';
+    if (document.getElementById('btnBatalEdit')) document.getElementById('btnBatalEdit').style.display = 'block';
 
-    // ==========================================================
-    // FUNGSI BATAL EDIT (RESET FORM KE MODE AWAL)
-    // ==========================================================
-    function batalEdit() {
-      document.getElementById('editId').value = '';
-      document.getElementById('cutiForm').reset();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
-      inialisasiSesiLogin();
-      toggleSakitUpload();
+  function formatTanggal(strDate) {
+    if (!strDate) return '';
+    const d = new Date(strDate);
+    if (isNaN(d.getTime())) return strDate;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 
-      const btnSubmit = document.getElementById('btnSubmit');
+  function batalEdit() {
+    const editId = document.getElementById('editId');
+    const cutiForm = document.getElementById('cutiForm');
+    if (editId) editId.value = '';
+    if (cutiForm) cutiForm.reset();
+
+    inialisasiSesiLogin();
+    toggleSakitUpload();
+
+    const btnSubmit = document.getElementById('btnSubmit');
+    if (btnSubmit) {
       btnSubmit.innerHTML = `<i class="bi bi-send-fill me-1"></i> Kirim Permintaan Cuti`;
       btnSubmit.classList.remove('btn-success');
       btnSubmit.classList.add('btn-primary');
+    }
 
-      document.getElementById('btnEdit').style.display = 'block';
-      document.getElementById('btnBatalEdit').style.display = 'none';
+    if (document.getElementById('btnEdit')) document.getElementById('btnEdit').style.display = 'block';
+    if (document.getElementById('btnBatalEdit')) document.getElementById('btnBatalEdit').style.display = 'none';
 
-      const status = document.getElementById('statusMessage');
+    const status = document.getElementById('statusMessage');
+    if (status) {
       status.innerText = "Mode edit dibatalkan.";
       status.style.color = "#6c757d";
     }
+  }
 
-    // ==========================================================
-    // FUNGSI SUBMIT FORM (TAMBAH BARU / PERBARUI DATA)
-    // ==========================================================
-    function submitForm(event) {
-      event.preventDefault();
-      const form = document.getElementById('cutiForm');
-      const btn = document.getElementById('btnSubmit');
-      const status = document.getElementById('statusMessage');
-      const jenisCuti = document.getElementById('jenisCuti').value;
-      const fileInput = document.getElementById('fileSakit');
-      const editId = document.getElementById('editId').value;
+  // ==========================================================
+  // SUBMIT FORM (TAMBAH BARU / PERBARUI DATA)
+  // ==========================================================
+  function submitForm(event) {
+    event.preventDefault();
+    const form = document.getElementById('cutiForm');
+    const btn = document.getElementById('btnSubmit');
+    const status = document.getElementById('statusMessage');
+    const jenisCuti = document.getElementById('jenisCuti').value;
+    const fileInput = document.getElementById('fileSakit');
+    const editIdVal = document.getElementById('editId') ? document.getElementById('editId').value : '';
 
-      // Jika Cuti Sakit & Pengajuan Baru (bukan edit), Wajib PDF
-      if (jenisCuti === 'Cuti Sakit' && !editId && fileInput.files.length === 0) {
-        alert("Harap unggah Surat Keterangan Sakit (Format PDF) terlebih dahulu!");
-        return;
-      }
+    if (jenisCuti === 'Cuti Sakit' && !editIdVal && fileInput && fileInput.files.length === 0) {
+      alert("Harap unggah Surat Keterangan Sakit (Format PDF) terlebih dahulu!");
+      return;
+    }
 
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
-      
-      // Tentukan aksi backend: 'updateDataCuti' jika mode edit, 'simpanDataCuti' jika baru
-      data.action = editId ? 'updateDataCuti' : 'simpanDataCuti';
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Tentukan aksi dan teruskan rowIndex jika mode edit
+    if (editIdVal) {
+      data.action = 'updateDataCuti';
+      data.rowIndex = editIdVal;
+    } else {
+      data.action = 'simpanDataCuti';
+    }
 
-      btn.disabled = true;
-      btn.innerText = editId ? "Sedang Memperbarui Data..." : "Sedang Mengirim...";
+    btn.disabled = true;
+    btn.innerText = editIdVal ? "Sedang Memperbarui Data..." : "Sedang Mengirim...";
+    if (status) {
       status.innerText = "Mohon tunggu, sedang memproses data...";
       status.style.color = "blue";
+    }
 
-      if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          data.fileSakitData = e.target.result.split(',')[1];
-          data.fileSakitName = file.name;
-          kirimKeServer(data);
-        };
-        reader.readAsDataURL(file);
-      } else {
+    if (fileInput && fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        data.fileSakitData = e.target.result.split(',')[1];
+        data.fileSakitName = file.name;
         kirimKeServer(data);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      kirimKeServer(data);
+    }
+  }
+
+  function kirimKeServer(data) {
+    const status = document.getElementById('statusMessage');
+    const btn = document.getElementById('btnSubmit');
+
+    fetch(WEB_APP_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8', 
+      },
+      body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(res => {
+      if (res && (res.status === 'success' || res.success)) {
+        if (status) status.innerHTML = `<span style="color:green">${res.message}</span>`;
+        alert(res.message);
+        batalEdit();
+      } else {
+        if (status) status.innerHTML = `<span style="color:red">Gagal: ${res.message || 'Terjadi kesalahan'}</span>`;
       }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      if (status) status.innerHTML = `<span style="color:red">Terjadi kesalahan koneksi/server.</span>`;
+    })
+    .finally(() => {
+      if (btn) btn.disabled = false;
+    });
+  }
+
+  function cariDataOlehNip() {
+    const nipInput = document.getElementById('inputNipCari');
+    const nip = nipInput ? nipInput.value.trim() : '';
+    const status = document.getElementById('searchStatus');
+    const btnCari = document.getElementById('btnCari');
+
+    if (!nip) {
+      alert("Silakan masukkan NIP terlebih dahulu!");
+      return;
     }
 
-    function kirimKeServer(data) {
-      const status = document.getElementById('statusMessage');
-      const btn = document.getElementById('btnSubmit');
-
-      fetch(WEB_APP_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8', 
-        },
-        body: JSON.stringify(data)
-      })
-      .then(response => response.json())
-      .then(res => {
-        if (res && res.status === 'success') {
-          status.innerHTML = `<span style="color:green">${res.message}</span>`;
-          alert(res.message);
-          batalEdit(); // Reset form ke kondisi normal
-        } else {
-          status.innerHTML = `<span style="color:red">Gagal: ${res.message || 'Terjadi kesalahan'}</span>`;
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        status.innerHTML = `<span style="color:red">Terjadi kesalahan koneksi/server.</span>`;
-      })
-      .finally(() => {
-        btn.disabled = false;
-      });
-    }
-
-    function cariDataOlehNip() {
-      const nip = document.getElementById('inputNipCari').value.trim();
-      const status = document.getElementById('searchStatus');
-      const btnCari = document.getElementById('btnCari');
-
-      if (!nip) {
-        alert("Silakan masukkan NIP terlebih dahulu!");
-        return;
-      }
-
-      btnCari.disabled = true;
+    if (btnCari) btnCari.disabled = true;
+    if (status) {
       status.innerText = "Sedang mencari data...";
       status.style.color = "blue";
+    }
 
-      const targetUrl = `${WEB_APP_URL}?action=cari&nip=${encodeURIComponent(nip)}`;
+    const targetUrl = `${WEB_APP_URL}?action=cari&nip=${encodeURIComponent(nip)}`;
 
-      fetch(targetUrl, {
-        method: 'GET',
-        redirect: 'follow'
-      })
-      .then(response => {
-        if (!response.ok) throw new Error("Jaringan bermasalah atau CORS terblokir");
-        return response.json();
-      })
-      .then(result => {
-        if (result && result.success) {
-          localStorage.setItem('previewCutiData', JSON.stringify(result.data));
+    fetch(targetUrl, {
+      method: 'GET',
+      redirect: 'follow'
+    })
+    .then(response => {
+      if (!response.ok) throw new Error("Jaringan bermasalah atau CORS terblokir");
+      return response.json();
+    })
+    .then(result => {
+      if (result && result.success) {
+        localStorage.setItem('previewCutiData', JSON.stringify(result.data));
+        if (status) {
           status.innerText = "Data ditemukan! Membuka halaman preview...";
           status.style.color = "green";
-          window.location.href = `preview.html?nip=${encodeURIComponent(nip)}`;
-        } else {
+        }
+        window.location.href = `preview.html?nip=${encodeURIComponent(nip)}`;
+      } else {
+        if (status) {
           status.innerText = result.message || "NIP tidak ditemukan atau belum pernah mengajukan cuti.";
           status.style.color = "red";
-          btnCari.disabled = false;
         }
-      })
-      .catch(err => {
-        console.error(err);
+        if (btnCari) btnCari.disabled = false;
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      if (status) {
         status.innerText = "Gagal mengambil data. Pastikan file diakses via web server/GitHub Pages.";
         status.style.color = "red";
-        btnCari.disabled = false;
-      });
-    }
-  </script>
+      }
+      if (btnCari) btnCari.disabled = false;
+    });
+  }
+</script>
 </body>
 </html>
