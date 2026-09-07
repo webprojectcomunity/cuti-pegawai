@@ -620,27 +620,30 @@
   const selectRiwayat = document.getElementById('selectRiwayatCuti');
   const indexTerpilih = selectRiwayat ? selectRiwayat.value : '';
 
+  // Ambil referensi data global secara aman (baik dari window maupun variabel lokal script)
+  const listData = (typeof dataRiwayatGlobal !== 'undefined') ? dataRiwayatGlobal : window.dataRiwayatGlobal;
+
   // Validasi Pilihan
-  if (indexTerpilih === '' || !window.dataRiwayatGlobal || !dataRiwayatGlobal[indexTerpilih]) {
+  if (indexTerpilih === '' || !listData || !listData[indexTerpilih]) {
     alert("Silakan pilih salah satu riwayat tanggal pengajuan cuti!");
     return;
   }
 
-  const dataTerpilih = dataRiwayatGlobal[indexTerpilih];
+  const dataTerpilih = listData[indexTerpilih];
 
-  // 1. Simpan data ke LocalStorage dengan format JSON string yang aman
+  // 1. Simpan data ke LocalStorage dengan format JSON string
   localStorage.setItem('previewCutiData', JSON.stringify(dataTerpilih));
 
-  // 2. Tutup Modal Bootstrap untuk menghindari peringatan aria-hidden/focus state
-  const modalEl = document.getElementById('modalCari'); // Sesuaikan ID modal jika beda
-  if (modalEl) {
+  // 2. Tutup Modal Bootstrap untuk menghilangkan warning aria-hidden
+  const modalEl = document.getElementById('modalCari');
+  if (modalEl && typeof bootstrap !== 'undefined') {
     const modalInstance = bootstrap.Modal.getInstance(modalEl);
     if (modalInstance) {
       modalInstance.hide();
     }
   }
 
-  // 3. Ambil properti NIP dan Row Index (dengan penanganan fallback)
+  // 3. Ambil properti NIP dan Row Index
   const nipVal = dataTerpilih.nip || dataTerpilih.NIP || '';
   const rowVal = dataTerpilih.rowIndex !== undefined ? dataTerpilih.rowIndex : '';
 
