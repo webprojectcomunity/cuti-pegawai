@@ -289,6 +289,37 @@
   // Konfigurasi Endpoint API Web App Google Apps Script
   const API_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
 
+  // Fungsi Helper: Membuka Pembungkus Data (Array / Nested Object / JSON String)
+  function unwrapData(rawData) {
+    if (!rawData) return null;
+    let data = rawData;
+
+    // Jika data berupa JSON String
+    if (typeof data === 'string') {
+      if (data === '[object Object]') return null;
+      try {
+        data = JSON.parse(data);
+      } catch (e) {
+        console.error("Gagal parse string JSON:", e);
+        return null;
+      }
+    }
+
+    // Jika data berupa Array, ambil item pertama
+    if (Array.isArray(data)) {
+      data = data[0] || null;
+    }
+
+    // Jika data terbungkus dalam { success: true, data: { ... } } atau { result: { ... } }
+    if (data && typeof data === 'object') {
+      if (data.data && typeof data.data === 'object') return unwrapData(data.data);
+      if (data.result && typeof data.result === 'object') return unwrapData(data.result);
+      if (data.payload && typeof data.payload === 'object') return unwrapData(data.payload);
+    }
+
+    return data;
+  }
+
   function formatTglIndo(stringTanggal) {
     if (!stringTanggal || stringTanggal === '-') return '-';
     let str = stringTanggal.toString().trim();
@@ -378,8 +409,15 @@
     }
   }
 
-  function renderData(data) {
-    console.log("Data Cuti Diterima:", data);
+  function renderData(rawData) {
+    // Buka pembungkus data jika ada
+    const data = unwrapData(rawData);
+    console.log("Data Cuti Siap Di-render:", data);
+
+    if (!data) {
+      alert("Data cuti kosong atau format tidak valid!");
+      return;
+    }
 
     // Tanggal Surat
     let tglInput = getFlexVal(data, 'Timestamp', 'timestamp', 'tglSekarang', 'tanggal', 'tanggalPengajuan');
@@ -491,26 +529,23 @@
     const urlParams = new URLSearchParams(window.location.search);
     const nipParam = urlParams.get('nip') || urlParams.get('id');
 
-    let data = null;
+    let rawData = null;
 
     if (nipParam) {
-      data = await loadDataFromAPI(nipParam);
+      rawData = await loadDataFromAPI(nipParam);
     }
 
-    if (!data) {
-      let dataRaw = localStorage.getItem('previewCutiData') || sessionStorage.getItem('lastCutiData');
-      if (dataRaw) {
-        data = JSON.parse(dataRaw);
-      }
+    if (!rawData) {
+      rawData = localStorage.getItem('previewCutiData') || sessionStorage.getItem('lastCutiData');
     }
 
-    if (!data) {
+    if (!rawData) {
       alert("Data cuti tidak ditemukan! Silakan lakukan pencarian kembali.");
       window.location.href = "index.html";
       return;
     }
 
-    renderData(data);
+    renderData(rawData);
   });
 </script>
 </body>
