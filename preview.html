@@ -20,11 +20,11 @@
       background-color: #f0f2f5; 
       padding: 10px 0; 
       font-family: "Times New Roman", Times, serif; 
-      font-size: 12px; /* Sedikit dirampingkan agar spasi teks aman */
+      font-size: 12px;
       line-height: 1.15; 
     }
 
-    /* Mengunci Ukuran Kertas F4 (21.5cm x 33cm) */
+    /* Ukuran Kertas F4 (21.5cm x 33cm) */
     .paper { 
       background: white; 
       padding: 0.6cm 1cm; 
@@ -33,19 +33,19 @@
       max-height: 33cm;
       margin: auto;
       box-shadow: 0 0 10px rgba(0,0,0,0.15);
-      overflow: hidden; /* Mencegah elemen meluber ke luar kontainer */
+      overflow: hidden;
     }
 
     .table-custom {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 3px; 
-      page-break-inside: avoid; /* Memaksa tabel tetap dalam satu halaman */
+      page-break-inside: avoid;
     }
 
     .table-custom td, .table-custom th {
       border: 1px solid black;
-      padding: 1.5px 4px; /* Padding dipresisikan */
+      padding: 1.5px 4px;
       vertical-align: top;
       font-size: 12px;
     }
@@ -61,7 +61,6 @@
     
     p { margin-bottom: 1px; }
 
-    /* Pengatur tinggi area tanda tangan yang aman dan rapi */
     .space-ttd {
       height: 40px; 
     }
@@ -107,7 +106,7 @@
 <div class="paper" id="areaCetak">
   <!-- Header Tanggal & Tujuan -->
   <div style="margin-left: 60%; margin-bottom: 50px;">
-    <p>Karimun, <span id="tglSekarang"></span></p>
+    <p>Karimun, <span id="tglSekarang">-</span></p>
     <p>Kepada</p>
     <p>Yth. <b>Sekretaris KPU Kab. Karimun</b></p>
     <p style="margin-left: 15px;">cq. Plt. Kasubbag Hukum dan SDM</p>
@@ -115,7 +114,7 @@
     <p style="margin-left: 15px;">Tempat</p>
   </div>
 
-  <div class="text-center fw-bold mb-2" style="font-size: 14px; margin-top: 20;">FORMULIR PERMINTAAN DAN PEMBERIAN CUTI</div>
+  <div class="text-center fw-bold mb-2" style="font-size: 14px; margin-top: 20px;">FORMULIR PERMINTAAN DAN PEMBERIAN CUTI</div>
 
   <!-- I. DATA PEGAWAI -->
   <table class="table-custom">
@@ -195,7 +194,7 @@
   </table>
 
   <!-- VI. ALAMAT & PEMOHON -->
-  <table class="table-custom" border="1">
+  <table class="table-custom">
     <tr class="section-header">
       <td colspan="3"><b>VI. ALAMAT SELAMA MENJALANKAN CUTI</b></td>
     </tr>
@@ -216,7 +215,7 @@
   </table>
 
   <!-- VII. ATASAN LANGSUNG -->
-  <table class="table-custom" border="1">
+  <table class="table-custom">
     <tr class="section-header">
       <td colspan="4"><b>VII. PERTIMBANGAN ATASAN LANGSUNG **</b></td>
     </tr>
@@ -243,7 +242,7 @@
   </table>
 
   <!-- VIII. PEJABAT BERWENANG -->
-  <table class="table-custom" border="1">
+  <table class="table-custom">
     <tr class="section-header">
       <td colspan="4"><b>VIII. KEPUTUSAN PEJABAT YANG BERWENANG MEMBERIKAN CUTI **</b></td>
     </tr>
@@ -269,8 +268,8 @@
     </tr>
   </table>
 
-  <!-- FOOTER CATATAN (Atur margin-top di sini) -->
-  <div style="font-size: 10px; margin-top: 50px; line-height: 1.15; font-family: Arial, sans-serif;">
+  <!-- FOOTER CATATAN -->
+  <div style="font-size: 10px; margin-top: 25px; line-height: 1.15; font-family: Arial, sans-serif;">
     <div style="margin-bottom: 2px;">Catatan:</div>
     <div>*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Coret yang tidak perlu</div>
     <div>**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pilih salah satu dengan memberi tanda centang (✔)</div>
@@ -281,6 +280,7 @@
     <div>N-2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Sisa cuti 2 tahun sebelumnya</div>
   </div>
 </div>
+
 <script>
   function formatTglIndo(stringTanggal) {
     if (!stringTanggal || stringTanggal === '-') return '-';
@@ -315,6 +315,13 @@
     return str;
   }
 
+  function cleanNIP(val) {
+    if (!val) return '-';
+    let str = val.toString().trim();
+    if (str.startsWith("'")) str = str.substring(1);
+    return str || '-';
+  }
+
   function downloadPDF() {
     const element = document.getElementById('areaCetak');
     const namaPegawai = document.getElementById('disp_nama').innerText || 'Pegawai';
@@ -331,11 +338,11 @@
     html2pdf().set(options).from(element).save();
   }
 
-  // Fungsi helper untuk mengambil nilai berdasarkan beberapa kemungkinan nama properti/key
+  // Helper fleksibel untuk ekstrak nilai dari berbagai variasi penamaan kunci
   function getVal(obj, ...keys) {
     for (let k of keys) {
-      if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
-        return obj[k];
+      if (obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
+        return String(obj[k]).trim();
       }
     }
     return null;
@@ -351,10 +358,10 @@
     }
 
     const data = JSON.parse(dataRaw);
-    console.log("Data Cuti Terdeteksi:", data); // Cek console browser F12 untuk melihat struktur objek
+    console.log("Data Cuti Terdeteksi:", data);
 
     // Logika Tanggal Surat
-    let tglInput = getVal(data, 'Timestamp', 'timestamp', 'tglSekarang', 'tanggal');
+    let tglInput = getVal(data, 'Timestamp', 'timestamp', 'tglSekarang', 'tanggal', 'tanggalPengajuan');
     if (tglInput) {
       document.getElementById('tglSekarang').innerText = formatTglIndo(tglInput);
     } else {
@@ -363,16 +370,19 @@
     }
 
     // I. Data Pegawai
-    const nama = getVal(data, 'nama', 'Nama') || '-';
-    const nip = getVal(data, 'nip', 'NIP') || '-';
+    const nama = getVal(data, 'nama', 'Nama', 'namaPegawai') || '-';
+    const nip = cleanNIP(getVal(data, 'nip', 'NIP', 'nipPegawai'));
     
     document.getElementById('disp_nama').innerText = nama;
     document.getElementById('disp_nip').innerText = nip;
     document.getElementById('disp_jabatan').innerText = getVal(data, 'jabatan', 'Jabatan') || '-';
     
     let mk = getVal(data, 'masaKerja', 'masakerja', 'MasaKerja') || '-';
-    document.getElementById('disp_masaKerja').innerText = mk.toString().includes('Tahun') ? mk : mk + ' Tahun';
-    document.getElementById('disp_unitKerja').innerText = getVal(data, 'unitKerja', 'unitKerja', 'UnitKerja') || 'KPU KABUPATEN KARIMUN';
+    if (mk !== '-' && !mk.toString().toLowerCase().includes('tahun')) {
+      mk += ' Tahun';
+    }
+    document.getElementById('disp_masaKerja').innerText = mk;
+    document.getElementById('disp_unitKerja').innerText = getVal(data, 'unitKerja', 'UnitKerja') || 'KPU KABUPATEN KARIMUN';
     
     // IV. Data Cuti
     document.getElementById('disp_alasan').innerText = getVal(data, 'alasan', 'alasanCuti', 'Alasan') || '-';
@@ -390,7 +400,7 @@
 
     let jenisCutiVal = getVal(data, 'jenisCuti', 'jenis_cuti') || '';
 
-    if (jenisCutiVal === "Cuti Tahunan" && lamaHari > 0) {
+    if (jenisCutiVal.toLowerCase().includes("tahunan") && lamaHari > 0) {
       let sisaLama = lamaHari;
       const maxN = 12;
       const butuhN = maxN - rawN;
@@ -425,28 +435,24 @@
     document.getElementById('sign_nama').innerText = nama;
     document.getElementById('sign_nip').innerText = nip;
 
-    // VII & VIII. Data Atasan Langsung & Pejabat Berwenang
-    document.getElementById('disp_jabatanAtasan').innerText = getVal(data, 'jabatanAtasan', 'jabatan_atasan') || 'Plt. Kasubbag Keuangan Hukum dan SDM';
-    document.getElementById('disp_namaAtasan').innerText = getVal(data, 'namaAtasan', 'nama_atasan') || '-';
-    document.getElementById('disp_nipAtasan').innerText = getVal(data, 'nipAtasan', 'nip_atasan') || '-';
+    // VII. Data Atasan Langsung
+    document.getElementById('disp_jabatanAtasan').innerText = getVal(data, 'jabatanAtasan', 'jabatan_atasan', 'inputJabatanAtasan') || 'Plt. Kasubbag Keuangan Hukum dan SDM';
+    document.getElementById('disp_namaAtasan').innerText = getVal(data, 'namaAtasan', 'nama_atasan', 'inputNamaAtasan', 'namaAtasanLangsung') || '-';
+    document.getElementById('disp_nipAtasan').innerText = cleanNIP(getVal(data, 'nipAtasan', 'nip_atasan', 'inputNipAtasan', 'nipAtasanLangsung'));
 
-    document.getElementById('disp_jabatanPejabat').innerText = getVal(data, 'jabatanPejabat', 'jabatan_pejabat') || 'Pejabat Berwenang,';
-    document.getElementById('disp_namaPejabat').innerText = getVal(data, 'namaPejabat', 'nama_pejabat') || '-';
-    document.getElementById('disp_nipPejabat').innerText = getVal(data, 'nipPejabat', 'nip_pejabat') || '-';
+    // VIII. Data Pejabat Berwenang
+    document.getElementById('disp_jabatanPejabat').innerText = getVal(data, 'jabatanPejabat', 'jabatan_pejabat', 'inputJabatanPejabat') || 'Pejabat Berwenang,';
+    document.getElementById('disp_namaPejabat').innerText = getVal(data, 'namaPejabat', 'nama_pejabat', 'inputNamaPejabat') || '-';
+    document.getElementById('disp_nipPejabat').innerText = cleanNIP(getVal(data, 'nipPejabat', 'nip_pejabat', 'inputNipPejabat'));
 
     // II. Logika Centang Jenis Cuti
-    const checks = {
-      "Cuti Tahunan": "check_tahunan",
-      "Cuti Besar": "check_besar",
-      "Cuti Sakit": "check_sakit",
-      "Cuti Melahirkan": "check_melahirkan",
-      "Cuti Karena Alasan Penting": "check_penting",
-      "Cuti di Luar Tanggungan Negara": "check_luar"
-    };
-
-    if (checks[jenisCutiVal] && document.getElementById(checks[jenisCutiVal])) {
-      document.getElementById(checks[jenisCutiVal]).innerText = "☑";
-    }
+    const jenisLower = jenisCutiVal.toLowerCase();
+    if (jenisLower.includes("tahunan")) document.getElementById("check_tahunan").innerText = "☑";
+    else if (jenisLower.includes("besar")) document.getElementById("check_besar").innerText = "☑";
+    else if (jenisLower.includes("sakit")) document.getElementById("check_sakit").innerText = "☑";
+    else if (jenisLower.includes("melahirkan")) document.getElementById("check_melahirkan").innerText = "☑";
+    else if (jenisLower.includes("penting")) document.getElementById("check_penting").innerText = "☑";
+    else if (jenisLower.includes("luar") || jenisLower.includes("tanggungan")) document.getElementById("check_luar").innerText = "☑";
   });
 </script>
 </body>
