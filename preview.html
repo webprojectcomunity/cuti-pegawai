@@ -7,11 +7,10 @@
   <title>Preview & Cetak Surat Cuti</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   
-  <!-- Library untuk Auto-Download PDF -->
+  <!-- Library Auto-Download PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
-    /* Reset & standar box model */
     * {
       box-sizing: border-box;
     }
@@ -65,7 +64,6 @@
       height: 40px; 
     }
 
-    /* Aturan Cetak Kertas (Print View) */
     @media print {
       @page {
         size: 21.5cm 33cm;
@@ -94,7 +92,7 @@
 </head>
 <body>
 
-<!-- Panel Navigasi / Kontrol -->
+<!-- Panel Navigasi -->
 <div class="container no-print mb-3 d-flex justify-content-between align-items-center" style="max-width: 21.5cm;">
   <a href="index.html" class="btn btn-sm btn-outline-secondary">← Kembali ke Form</a>
   <div>
@@ -109,7 +107,7 @@
     <p>Karimun, <span id="tglSekarang">-</span></p>
     <p>Kepada</p>
     <p>Yth. <b>Sekretaris KPU Kab. Karimun</b></p>
-    <p style="margin-left: 15px;">cq. Plt. Kasubbag Hukum dan SDM</p>
+    <p style="margin-left: 15px;">cq. Plt. Kasubbag Keuangan Hukum dan SDM</p>
     <p>di -</p>
     <p style="margin-left: 15px;">Tempat</p>
   </div>
@@ -284,7 +282,6 @@
 <script>
   function formatTglIndo(stringTanggal) {
     if (!stringTanggal || stringTanggal === '-') return '-';
-    
     let str = stringTanggal.toString().trim();
     const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
@@ -311,7 +308,6 @@
         }
       }
     }
-
     return str;
   }
 
@@ -320,6 +316,35 @@
     let str = val.toString().trim();
     if (str.startsWith("'")) str = str.substring(1);
     return str || '-';
+  }
+
+  // Engine Pencari Kunci Fleksibel (Case-insensitive & mengabaikan spasi/karakter khusus)
+  function getFlexVal(obj, ...keyPatterns) {
+    if (!obj) return null;
+    
+    // 1. Pencocokan langsung
+    for (let key of keyPatterns) {
+      if (obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== '') {
+        return String(obj[key]).trim();
+      }
+    }
+    
+    // 2. Pencocokan dinamis tanpa spasi / huruf kapital / garis bawah
+    const normalizedMap = {};
+    for (let k in obj) {
+      if (obj.hasOwnProperty(k)) {
+        const normKey = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+        normalizedMap[normKey] = obj[k];
+      }
+    }
+
+    for (let pattern of keyPatterns) {
+      const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (normalizedMap[normPattern] !== undefined && normalizedMap[normPattern] !== null && String(normalizedMap[normPattern]).trim() !== '') {
+        return String(normalizedMap[normPattern]).trim();
+      }
+    }
+    return null;
   }
 
   function downloadPDF() {
@@ -338,30 +363,20 @@
     html2pdf().set(options).from(element).save();
   }
 
-  // Helper fleksibel untuk ekstrak nilai dari berbagai variasi penamaan kunci
-  function getVal(obj, ...keys) {
-    for (let k of keys) {
-      if (obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
-        return String(obj[k]).trim();
-      }
-    }
-    return null;
-  }
-
   document.addEventListener('DOMContentLoaded', function() {
     let dataRaw = localStorage.getItem('previewCutiData') || sessionStorage.getItem('lastCutiData');
     
     if (!dataRaw) {
-      alert("Data cuti tidak ditemukan di sistem browser! Anda akan diarahkan kembali ke halaman pencarian.");
+      alert("Data cuti tidak ditemukan! Silakan lakukan pencarian kembali.");
       window.location.href = "index.html";
       return;
     }
 
     const data = JSON.parse(dataRaw);
-    console.log("Data Cuti Terdeteksi:", data);
+    console.log("Data Cuti Diterima:", data);
 
-    // Logika Tanggal Surat
-    let tglInput = getVal(data, 'Timestamp', 'timestamp', 'tglSekarang', 'tanggal', 'tanggalPengajuan');
+    // Tanggal Surat
+    let tglInput = getFlexVal(data, 'Timestamp', 'timestamp', 'tglSekarang', 'tanggal', 'tanggalPengajuan');
     if (tglInput) {
       document.getElementById('tglSekarang').innerText = formatTglIndo(tglInput);
     } else {
@@ -370,82 +385,61 @@
     }
 
     // I. Data Pegawai
-    const nama = getVal(data, 'nama', 'Nama', 'namaPegawai') || '-';
-    const nip = cleanNIP(getVal(data, 'nip', 'NIP', 'nipPegawai'));
+    const nama = getFlexVal(data, 'nama', 'Nama', 'namaPegawai', 'nama_pegawai') || '-';
+    const nip = cleanNIP(getFlexVal(data, 'nip', 'NIP', 'nipPegawai', 'nip_pegawai'));
     
     document.getElementById('disp_nama').innerText = nama;
     document.getElementById('disp_nip').innerText = nip;
-    document.getElementById('disp_jabatan').innerText = getVal(data, 'jabatan', 'Jabatan') || '-';
+    document.getElementById('disp_jabatan').innerText = getFlexVal(data, 'jabatan', 'Jabatan') || '-';
     
-    let mk = getVal(data, 'masaKerja', 'masakerja', 'MasaKerja') || '-';
+    let mk = getFlexVal(data, 'masaKerja', 'masakerja', 'MasaKerja', 'masa_kerja') || '-';
     if (mk !== '-' && !mk.toString().toLowerCase().includes('tahun')) {
       mk += ' Tahun';
     }
     document.getElementById('disp_masaKerja').innerText = mk;
-    document.getElementById('disp_unitKerja').innerText = getVal(data, 'unitKerja', 'UnitKerja') || 'KPU KABUPATEN KARIMUN';
+    document.getElementById('disp_unitKerja').innerText = getFlexVal(data, 'unitKerja', 'UnitKerja', 'unit_kerja') || 'KPU KABUPATEN KARIMUN';
     
     // IV. Data Cuti
-    document.getElementById('disp_alasan').innerText = getVal(data, 'alasan', 'alasanCuti', 'Alasan') || '-';
-    document.getElementById('disp_lama').innerText = getVal(data, 'lamaCuti', 'lama', 'lama_cuti') || '-';
-    document.getElementById('disp_mulai').innerText = formatTglIndo(getVal(data, 'mulaiTanggal', 'tglMulai', 'mulai'));
-    document.getElementById('disp_sampai').innerText = formatTglIndo(getVal(data, 'sampaiTanggal', 'tglSelesai', 'sampai'));
+    document.getElementById('disp_alasan').innerText = getFlexVal(data, 'alasan', 'alasanCuti', 'alasan_cuti', 'Alasan') || '-';
+    document.getElementById('disp_lama').innerText = getFlexVal(data, 'lamaCuti', 'lama', 'lama_cuti', 'lamanyaCuti') || '-';
+    document.getElementById('disp_mulai').innerText = formatTglIndo(getFlexVal(data, 'mulaiTanggal', 'tglMulai', 'mulai', 'tanggalMulai'));
+    document.getElementById('disp_sampai').innerText = formatTglIndo(getFlexVal(data, 'sampaiTanggal', 'tglSelesai', 'sampai', 'tanggalSelesai'));
     
-    // V. Saldo Cuti
-    let rawN2 = parseInt(getVal(data, 'n2_saldo', 'n2', 'sisaN2') || 0);
-    let rawN1 = parseInt(getVal(data, 'n1_saldo', 'n1', 'sisaN1') || 0);
-    let rawN  = parseInt(getVal(data, 'n_saldo',  'n',  'sisaN')  || 0);
+    // V. Saldo Cuti (N-2, N-1, N)
+    let sisaN2 = getFlexVal(data, 'n2', 'n2_saldo', 'sisaN2', 'sisa_n2', 'cuti_n2', 'saldo_n2', 'n-2', 'sisa_cuti_n2') || '0';
+    let sisaN1 = getFlexVal(data, 'n1', 'n1_saldo', 'sisaN1', 'sisa_n1', 'cuti_n1', 'saldo_n1', 'n-1', 'sisa_cuti_n1') || '0';
+    let sisaN  = getFlexVal(data, 'n',  'n_saldo',  'sisaN',  'sisa_n',  'cuti_n',  'saldo_n',  'n0',  'sisa_cuti_n')  || '0';
 
-    let valLama = (getVal(data, 'lamaCuti', 'lama') || "0").toString();
-    let lamaHari = parseInt(valLama.replace(/\D/g, '')) || 0;
-
-    let jenisCutiVal = getVal(data, 'jenisCuti', 'jenis_cuti') || '';
-
-    if (jenisCutiVal.toLowerCase().includes("tahunan") && lamaHari > 0) {
-      let sisaLama = lamaHari;
-      const maxN = 12;
-      const butuhN = maxN - rawN;
-      if (butuhN > 0) {
-        let tambahN = Math.min(sisaLama, butuhN);
-        rawN += tambahN;
-        sisaLama -= tambahN;
-      }
-
-      if (sisaLama > 0) {
-        const maxN1 = 6;
-        const butuhN1 = maxN1 - rawN1;
-        if (butuhN1 > 0) {
-          let tambahN1 = Math.min(sisaLama, butuhN1);
-          rawN1 += tambahN1;
-          sisaLama -= tambahN1;
-        }
-      }
-
-      if (sisaLama > 0) {
-        rawN2 += sisaLama;
-      }
-    }
-
-    document.getElementById('disp_n2').innerText = rawN2;
-    document.getElementById('disp_n1').innerText = rawN1;
-    document.getElementById('disp_n').innerText  = rawN;
+    document.getElementById('disp_n2').innerText = sisaN2;
+    document.getElementById('disp_n1').innerText = sisaN1;
+    document.getElementById('disp_n').innerText  = sisaN;
 
     // VI. Data Alamat & Tanda Tangan Pemohon
-    document.getElementById('disp_alamat').innerText = getVal(data, 'alamat', 'alamatLengkap') || '-';
-    document.getElementById('disp_telp').innerText = getVal(data, 'telepon', 'inputTelepon', 'telp', 'hp', 'noHp') || '-';
+    document.getElementById('disp_alamat').innerText = getFlexVal(data, 'alamat', 'alamatLengkap', 'alamat_lengkap') || '-';
+    document.getElementById('disp_telp').innerText = getFlexVal(data, 'telepon', 'telp', 'hp', 'noHp', 'no_hp', 'inputTelepon') || '-';
     document.getElementById('sign_nama').innerText = nama;
     document.getElementById('sign_nip').innerText = nip;
 
     // VII. Data Atasan Langsung
-    document.getElementById('disp_jabatanAtasan').innerText = getVal(data, 'jabatanAtasan', 'jabatan_atasan', 'inputJabatanAtasan') || 'Plt. Kasubbag Keuangan Hukum dan SDM';
-    document.getElementById('disp_namaAtasan').innerText = getVal(data, 'namaAtasan', 'nama_atasan', 'inputNamaAtasan', 'namaAtasanLangsung') || '-';
-    document.getElementById('disp_nipAtasan').innerText = cleanNIP(getVal(data, 'nipAtasan', 'nip_atasan', 'inputNipAtasan', 'nipAtasanLangsung'));
+    const namaAtasan = getFlexVal(data, 'namaAtasan', 'nama_atasan', 'namaAtasanLangsung', 'atasanLangsung', 'atasan', 'inputNamaAtasan') || '-';
+    const nipAtasan = cleanNIP(getFlexVal(data, 'nipAtasan', 'nip_atasan', 'nipAtasanLangsung', 'inputNipAtasan'));
+    const jabatanAtasan = getFlexVal(data, 'jabatanAtasan', 'jabatan_atasan', 'jabatanAtasanLangsung', 'inputJabatanAtasan') || 'Plt. Kasubbag Keuangan Hukum dan SDM';
+
+    document.getElementById('disp_namaAtasan').innerText = namaAtasan;
+    document.getElementById('disp_nipAtasan').innerText = nipAtasan;
+    document.getElementById('disp_jabatanAtasan').innerText = jabatanAtasan;
 
     // VIII. Data Pejabat Berwenang
-    document.getElementById('disp_jabatanPejabat').innerText = getVal(data, 'jabatanPejabat', 'jabatan_pejabat', 'inputJabatanPejabat') || 'Pejabat Berwenang,';
-    document.getElementById('disp_namaPejabat').innerText = getVal(data, 'namaPejabat', 'nama_pejabat', 'inputNamaPejabat') || '-';
-    document.getElementById('disp_nipPejabat').innerText = cleanNIP(getVal(data, 'nipPejabat', 'nip_pejabat', 'inputNipPejabat'));
+    const namaPejabat = getFlexVal(data, 'namaPejabat', 'nama_pejabat', 'namaPejabatBerwenang', 'pejabatBerwenang', 'pejabat', 'inputNamaPejabat') || '-';
+    const nipPejabat = cleanNIP(getFlexVal(data, 'nipPejabat', 'nip_pejabat', 'nipPejabatBerwenang', 'inputNipPejabat'));
+    const jabatanPejabat = getFlexVal(data, 'jabatanPejabat', 'jabatan_pejabat', 'jabatanPejabatBerwenang', 'inputJabatanPejabat') || 'Pejabat Berwenang,';
 
-    // II. Logika Centang Jenis Cuti
+    document.getElementById('disp_namaPejabat').innerText = namaPejabat;
+    document.getElementById('disp_nipPejabat').innerText = nipPejabat;
+    document.getElementById('disp_jabatanPejabat').innerText = jabatanPejabat;
+
+    // II. Centang Jenis Cuti
+    const jenisCutiVal = getFlexVal(data, 'jenisCuti', 'jenis_cuti', 'jenis') || '';
     const jenisLower = jenisCutiVal.toLowerCase();
     if (jenisLower.includes("tahunan")) document.getElementById("check_tahunan").innerText = "☑";
     else if (jenisLower.includes("besar")) document.getElementById("check_besar").innerText = "☑";
