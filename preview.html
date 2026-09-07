@@ -318,32 +318,43 @@
     return str || '-';
   }
 
-  // Engine Pencari Kunci Fleksibel (Case-insensitive & mengabaikan spasi/karakter khusus)
+  // Engine Pencari Kunci Cerdas (Mendukung Exact Match & Substring/Partial Match)
   function getFlexVal(obj, ...keyPatterns) {
-    if (!obj) return null;
-    
-    // 1. Pencocokan langsung
-    for (let key of keyPatterns) {
-      if (obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== '') {
-        return String(obj[key]).trim();
-      }
-    }
-    
-    // 2. Pencocokan dinamis tanpa spasi / huruf kapital / garis bawah
-    const normalizedMap = {};
-    for (let k in obj) {
-      if (obj.hasOwnProperty(k)) {
-        const normKey = k.toLowerCase().replace(/[^a-z0-9]/g, '');
-        normalizedMap[normKey] = obj[k];
+    if (!obj || typeof obj !== 'object') return null;
+
+    const keys = Object.keys(obj);
+    if (keys.length === 0) return null;
+
+    // 1. Pencocokan Langsung (Exact Match)
+    for (let pattern of keyPatterns) {
+      if (obj[pattern] !== undefined && obj[pattern] !== null && String(obj[pattern]).trim() !== '') {
+        return String(obj[pattern]).trim();
       }
     }
 
+    // Normalisasi semua kunci pada object JSON
+    const normEntries = keys.map(k => ({
+      origKey: k,
+      normKey: k.toLowerCase().replace(/[^a-z0-9]/g, ''),
+      val: obj[k]
+    })).filter(e => e.val !== undefined && e.val !== null && String(e.val).trim() !== '');
+
+    // 2. Pencocokan Normalisasi Tepat (Mengabaikan Kapital, Spasi, Simbol)
     for (let pattern of keyPatterns) {
       const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (normalizedMap[normPattern] !== undefined && normalizedMap[normPattern] !== null && String(normalizedMap[normPattern]).trim() !== '') {
-        return String(normalizedMap[normPattern]).trim();
-      }
+      const found = normEntries.find(e => e.normKey === normPattern);
+      if (found) return String(found.val).trim();
     }
+
+    // 3. Pencocokan Parsial / Substring (Mencari Kata Kunci di Dalam Header Panjang)
+    for (let pattern of keyPatterns) {
+      const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (normPattern.length < 2) continue; // Abaikan jika pattern terlalu pendek (seperti 1 huruf)
+
+      const found = normEntries.find(e => e.normKey.includes(normPattern));
+      if (found) return String(found.val).trim();
+    }
+
     return null;
   }
 
@@ -373,7 +384,10 @@
     }
 
     const data = JSON.parse(dataRaw);
+    
+    // Fitur Debugging: Menampilkan Kunci/Header Data Asli di Console Browser (F12)
     console.log("Data Cuti Diterima:", data);
+    console.log("Kunci/Header Kolom yang Tersedia:", Object.keys(data));
 
     // Tanggal Surat
     let tglInput = getFlexVal(data, 'Timestamp', 'timestamp', 'tglSekarang', 'tanggal', 'tanggalPengajuan');
@@ -405,10 +419,10 @@
     document.getElementById('disp_mulai').innerText = formatTglIndo(getFlexVal(data, 'mulaiTanggal', 'tglMulai', 'mulai', 'tanggalMulai'));
     document.getElementById('disp_sampai').innerText = formatTglIndo(getFlexVal(data, 'sampaiTanggal', 'tglSelesai', 'sampai', 'tanggalSelesai'));
     
-    // V. Saldo Cuti (N-2, N-1, N)
-    let sisaN2 = getFlexVal(data, 'n2', 'n2_saldo', 'sisaN2', 'sisa_n2', 'cuti_n2', 'saldo_n2', 'n-2', 'sisa_cuti_n2') || '0';
-    let sisaN1 = getFlexVal(data, 'n1', 'n1_saldo', 'sisaN1', 'sisa_n1', 'cuti_n1', 'saldo_n1', 'n-1', 'sisa_cuti_n1') || '0';
-    let sisaN  = getFlexVal(data, 'n',  'n_saldo',  'sisaN',  'sisa_n',  'cuti_n',  'saldo_n',  'n0',  'sisa_cuti_n')  || '0';
+    // V. Saldo Cuti (Dukungan Variasi Kata Kunci Luas)
+    let sisaN2 = getFlexVal(data, 'sisacutin2', 'cutin2', 'sisa_n2', 'saldo_n2', 'n2', 'sisa cuti n-2', 'n-2') || '0';
+    let sisaN1 = getFlexVal(data, 'sisacutin1', 'cutin1', 'sisa_n1', 'saldo_n1', 'n1', 'sisa cuti n-1', 'n-1') || '0';
+    let sisaN  = getFlexVal(data, 'sisacutin', 'cutin', 'sisa_n', 'saldo_n', 'sisa cuti n', 'n0', 'tahunberjalan') || '0';
 
     document.getElementById('disp_n2').innerText = sisaN2;
     document.getElementById('disp_n1').innerText = sisaN1;
@@ -421,18 +435,18 @@
     document.getElementById('sign_nip').innerText = nip;
 
     // VII. Data Atasan Langsung
-    const namaAtasan = getFlexVal(data, 'namaAtasan', 'nama_atasan', 'namaAtasanLangsung', 'atasanLangsung', 'atasan', 'inputNamaAtasan') || '-';
-    const nipAtasan = cleanNIP(getFlexVal(data, 'nipAtasan', 'nip_atasan', 'nipAtasanLangsung', 'inputNipAtasan'));
-    const jabatanAtasan = getFlexVal(data, 'jabatanAtasan', 'jabatan_atasan', 'jabatanAtasanLangsung', 'inputJabatanAtasan') || 'Plt. Kasubbag Keuangan Hukum dan SDM';
+    const namaAtasan = getFlexVal(data, 'namaatasan', 'atasanlangsung', 'nama_atasan', 'inputNamaAtasan') || '-';
+    const nipAtasan = cleanNIP(getFlexVal(data, 'nipatasan', 'nip_atasan', 'inputNipAtasan'));
+    const jabatanAtasan = getFlexVal(data, 'jabatanatasan', 'jabatan_atasan', 'inputJabatanAtasan') || 'Plt. Kasubbag Keuangan Hukum dan SDM';
 
     document.getElementById('disp_namaAtasan').innerText = namaAtasan;
     document.getElementById('disp_nipAtasan').innerText = nipAtasan;
     document.getElementById('disp_jabatanAtasan').innerText = jabatanAtasan;
 
-    // VIII. Data Pejabat Berwenang
-    const namaPejabat = getFlexVal(data, 'namaPejabat', 'nama_pejabat', 'namaPejabatBerwenang', 'pejabatBerwenang', 'pejabat', 'inputNamaPejabat') || '-';
-    const nipPejabat = cleanNIP(getFlexVal(data, 'nipPejabat', 'nip_pejabat', 'nipPejabatBerwenang', 'inputNipPejabat'));
-    const jabatanPejabat = getFlexVal(data, 'jabatanPejabat', 'jabatan_pejabat', 'jabatanPejabatBerwenang', 'inputJabatanPejabat') || 'Pejabat Berwenang,';
+    // VIII. Data Pejabat Berwenang (Dukungan Variasi Kata Kunci Luas)
+    const namaPejabat = getFlexVal(data, 'pejabatyangberwenang', 'namapejabat', 'pejabatberwenang', 'pejabat', 'sekretaris', 'namasekretaris', 'inputNamaPejabat') || '-';
+    const nipPejabat = cleanNIP(getFlexVal(data, 'nippejabat', 'nip_pejabat', 'nipsekretaris', 'inputNipPejabat'));
+    const jabatanPejabat = getFlexVal(data, 'jabatanpejabat', 'jabatan_pejabat', 'jabatansekretaris', 'inputJabatanPejabat') || 'Pejabat Berwenang,';
 
     document.getElementById('disp_namaPejabat').innerText = namaPejabat;
     document.getElementById('disp_nipPejabat').innerText = nipPejabat;
