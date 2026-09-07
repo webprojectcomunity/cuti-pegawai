@@ -320,44 +320,43 @@
 
   // Engine Pencari Kunci Cerdas (Mendukung Exact Match & Substring/Partial Match)
   function getFlexVal(obj, ...keyPatterns) {
-    if (!obj || typeof obj !== 'object') return null;
+  if (!obj || typeof obj !== 'object') return null;
 
-    const keys = Object.keys(obj);
-    if (keys.length === 0) return null;
-
-    // 1. Pencocokan Langsung (Exact Match)
-    for (let pattern of keyPatterns) {
-      if (obj[pattern] !== undefined && obj[pattern] !== null && String(obj[pattern]).trim() !== '') {
-        return String(obj[pattern]).trim();
-      }
+  // 1. Pencocokan Langsung (Exact Match)
+  for (let pattern of keyPatterns) {
+    if (obj[pattern] !== undefined && obj[pattern] !== null && String(obj[pattern]).trim() !== '') {
+      return String(obj[pattern]).trim();
     }
-
-    // Normalisasi semua kunci pada object JSON
-    const normEntries = keys.map(k => ({
-      origKey: k,
-      normKey: k.toLowerCase().replace(/[^a-z0-9]/g, ''),
-      val: obj[k]
-    })).filter(e => e.val !== undefined && e.val !== null && String(e.val).trim() !== '');
-
-    // 2. Pencocokan Normalisasi Tepat (Mengabaikan Kapital, Spasi, Simbol)
-    for (let pattern of keyPatterns) {
-      const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const found = normEntries.find(e => e.normKey === normPattern);
-      if (found) return String(found.val).trim();
-    }
-
-    // 3. Pencocokan Parsial / Substring (Mencari Kata Kunci di Dalam Header Panjang)
-    for (let pattern of keyPatterns) {
-      const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (normPattern.length < 2) continue; // Abaikan jika pattern terlalu pendek (seperti 1 huruf)
-
-      const found = normEntries.find(e => e.normKey.includes(normPattern));
-      if (found) return String(found.val).trim();
-    }
-
-    return null;
   }
 
+  const keys = Object.keys(obj);
+  if (keys.length === 0) return null;
+
+  const normEntries = keys.map(k => ({
+    origKey: k,
+    normKey: k.toLowerCase().replace(/[^a-z0-9]/g, ''),
+    val: obj[k]
+  })).filter(e => e.val !== undefined && e.val !== null && String(e.val).trim() !== '');
+
+  // 2. Pencocokan Normalisasi Tepat (Tanpa spasi & kapital)
+  for (let pattern of keyPatterns) {
+    const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const found = normEntries.find(e => e.normKey === normPattern);
+    if (found) return String(found.val).trim();
+  }
+
+  // 3. Pencocokan Parsial (Mendukung nama kunci 1 karakter seperti 'n')
+  for (let pattern of keyPatterns) {
+    const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!normPattern) continue;
+
+    const found = normEntries.find(e => e.normKey.includes(normPattern));
+    if (found) return String(found.val).trim();
+  }
+
+  return null;
+}
+  
   function downloadPDF() {
     const element = document.getElementById('areaCetak');
     const namaPegawai = document.getElementById('disp_nama').innerText || 'Pegawai';
@@ -419,15 +418,15 @@
     document.getElementById('disp_mulai').innerText = formatTglIndo(getFlexVal(data, 'mulaiTanggal', 'tglMulai', 'mulai', 'tanggalMulai'));
     document.getElementById('disp_sampai').innerText = formatTglIndo(getFlexVal(data, 'sampaiTanggal', 'tglSelesai', 'sampai', 'tanggalSelesai'));
     
-    // V. Saldo Cuti (Dukungan Variasi Kata Kunci Luas)
-    let sisaN2 = getFlexVal(data, 'sisacutin2', 'cutin2', 'sisa_n2', 'saldo_n2', 'n2', 'sisa cuti n-2', 'n-2') || '0';
-    let sisaN1 = getFlexVal(data, 'sisacutin1', 'cutin1', 'sisa_n1', 'saldo_n1', 'n1', 'sisa cuti n-1', 'n-1') || '0';
-    let sisaN  = getFlexVal(data, 'sisacutin', 'cutin', 'sisa_n', 'saldo_n', 'sisa cuti n', 'n0', 'tahunberjalan') || '0';
+   // V. Saldo Cuti (Mengutamakan kunci 'n2', 'n1', dan 'n' sesuai output Apps Script)
+let sisaN2 = getFlexVal(data, 'n2', 'sisacutin2', 'cutin2', 'sisa_n2', 'saldo_n2', 'sisa cuti n-2', 'n-2');
+let sisaN1 = getFlexVal(data, 'n1', 'sisacutin1', 'cutin1', 'sisa_n1', 'saldo_n1', 'sisa cuti n-1', 'n-1');
+let sisaN  = getFlexVal(data, 'n',  'sisacutin',  'cutin',  'sisa_n',  'saldo_n',  'sisa cuti n',   'n0');
 
-    document.getElementById('disp_n2').innerText = sisaN2;
-    document.getElementById('disp_n1').innerText = sisaN1;
-    document.getElementById('disp_n').innerText  = sisaN;
-
+// Pastikan nilai '0' (angka nol) tetap ditampilkan dan tidak dianggap kosong
+document.getElementById('disp_n2').innerText = (sisaN2 !== null && sisaN2 !== undefined) ? sisaN2 : '0';
+document.getElementById('disp_n1').innerText = (sisaN1 !== null && sisaN1 !== undefined) ? sisaN1 : '0';
+document.getElementById('disp_n').innerText  = (sisaN !== null && sisaN !== undefined) ? sisaN : '0';
     // VI. Data Alamat & Tanda Tangan Pemohon
     document.getElementById('disp_alamat').innerText = getFlexVal(data, 'alamat', 'alamatLengkap', 'alamat_lengkap') || '-';
     document.getElementById('disp_telp').innerText = getFlexVal(data, 'telepon', 'telp', 'hp', 'noHp', 'no_hp', 'inputTelepon') || '-';
