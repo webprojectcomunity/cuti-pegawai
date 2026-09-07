@@ -616,23 +616,45 @@
     });
   }
 
-  function cetakCutiTerpilih() {
-    const selectRiwayat = document.getElementById('selectRiwayatCuti');
-    const indexTerpilih = selectRiwayat ? selectRiwayat.value : '';
+ function cetakCutiTerpilih() {
+  const selectRiwayat = document.getElementById('selectRiwayatCuti');
+  const indexTerpilih = selectRiwayat ? selectRiwayat.value : '';
 
-    if (indexTerpilih === '' || !dataRiwayatGlobal[indexTerpilih]) {
-      alert("Silakan pilih salah satu riwayat tanggal pengajuan cuti!");
-      return;
-    }
-
-    const dataTerpilih = dataRiwayatGlobal[indexTerpilih];
-
-    // Simpan data spesifik ke LocalStorage untuk dibaca oleh preview.html
-    localStorage.setItem('previewCutiData', JSON.stringify(dataTerpilih));
-
-    // Redirect ke halaman preview
-    window.location.href = `preview.html?nip=${encodeURIComponent(dataTerpilih.nip)}&row=${dataTerpilih.rowIndex}`;
+  // Validasi Pilihan
+  if (indexTerpilih === '' || !window.dataRiwayatGlobal || !dataRiwayatGlobal[indexTerpilih]) {
+    alert("Silakan pilih salah satu riwayat tanggal pengajuan cuti!");
+    return;
   }
+
+  const dataTerpilih = dataRiwayatGlobal[indexTerpilih];
+
+  // 1. Simpan data ke LocalStorage dengan format JSON string yang aman
+  localStorage.setItem('previewCutiData', JSON.stringify(dataTerpilih));
+
+  // 2. Tutup Modal Bootstrap untuk menghindari peringatan aria-hidden/focus state
+  const modalEl = document.getElementById('modalCari'); // Sesuaikan ID modal jika beda
+  if (modalEl) {
+    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (modalInstance) {
+      modalInstance.hide();
+    }
+  }
+
+  // 3. Ambil properti NIP dan Row Index (dengan penanganan fallback)
+  const nipVal = dataTerpilih.nip || dataTerpilih.NIP || '';
+  const rowVal = dataTerpilih.rowIndex !== undefined ? dataTerpilih.rowIndex : '';
+
+  // 4. Redirect ke halaman preview.html
+  if (nipVal) {
+    let url = `preview.html?nip=${encodeURIComponent(nipVal)}`;
+    if (rowVal !== '') {
+      url += `&row=${encodeURIComponent(rowVal)}`;
+    }
+    window.location.href = url;
+  } else {
+    window.location.href = `preview.html`;
+  }
+}
 </script>
 </body>
 </html>
