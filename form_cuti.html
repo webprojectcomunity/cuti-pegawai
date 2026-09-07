@@ -161,36 +161,60 @@
   </div>
 
   <!-- Modal Pencarian Data Cuti -->
-  <div class="modal fade" id="modalCari" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Cari Data Cuti Pegawai</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <!-- Modal Pencarian & Riwayat Data Cuti -->
+<div class="modal fade" id="modalCari" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Riwayat & Cetak Surat Cuti</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-bold">NIP Anda</label>
+          <input type="text" id="inputNipCari" class="form-control" placeholder="Masukkan NIP yang terdaftar" readonly style="background-color: #e9ecef;">
         </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">NIP Anda</label>
-            <input type="text" id="inputNipCari" class="form-control" placeholder="Masukkan NIP yang terdaftar" readonly style="background-color: #e9ecef;">
-          </div>
-          <div id="searchStatus" class="text-center small"></div>
+
+        <!-- Dropdown Riwayat Pengajuan Cuti -->
+        <div class="mb-3" id="containerSelectRiwayat" style="display: none;">
+          <label class="form-label fw-bold">Pilih Tanggal Pengajuan (Timestamp):</label>
+          <select id="selectRiwayatCuti" class="form-select">
+            <option value="">-- Memuat Riwayat... --</option>
+          </select>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-primary" id="btnCari" onclick="cariDataOlehNip()">Cari & Cetak</button>
-        </div>
+
+        <div id="searchStatus" class="text-center small my-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-primary" id="btnCari" onclick="cetakCutiTerpilih()" disabled>
+          <i class="bi bi-printer me-1"></i> Cetak / Lihat Surat
+        </button>
       </div>
     </div>
   </div>
+</div>
 
- <script>
+<script>
   const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
 
   let dataPegawaiGlobal = [];
+  let dataRiwayatGlobal = []; // Menyimpan daftar riwayat pengajuan cuti
 
-  window.addEventListener('DOMContentLoaded', () => {
+  // ==========================================================
+  // INISIALISASI HALAMAN & EVENT LISTENERS
+  // ==========================================================
+  document.addEventListener('DOMContentLoaded', () => {
     inialisasiSesiLogin();
     muatDaftarPegawai();
+
+    // Listener otomatis saat Modal Cari/Riwayat dibuka
+    const modalCariElem = document.getElementById('modalCari');
+    if (modalCariElem) {
+      modalCariElem.addEventListener('shown.bs.modal', () => {
+        muatRiwayatCutiOlehNip();
+      });
+    }
   });
 
   function inialisasiSesiLogin() {
@@ -338,7 +362,6 @@
   }
 
   function tampilkanDataKeForm(data) {
-    // Simpan posisi baris (rowIndex) ke input hidden editId
     const editIdInput = document.getElementById('editId');
     if (editIdInput) editIdInput.value = data.rowIndex || data.rowId || data.id || '';
 
@@ -404,6 +427,21 @@
     return `${year}-${month}-${day}`;
   }
 
+  function formatTanggalWaktu(strDate) {
+    if (!strDate) return '-';
+    const d = new Date(strDate);
+    if (isNaN(d.getTime())) return strDate;
+    
+    const pad = (num) => String(num).padStart(2, '0');
+    const tgl = pad(d.getDate());
+    const bln = pad(d.getMonth() + 1);
+    const thn = d.getFullYear();
+    const jam = pad(d.getHours());
+    const menit = pad(d.getMinutes());
+
+    return `${tgl}/${bln}/${thn} ${jam}:${menit} WIB`;
+  }
+
   function batalEdit() {
     const editId = document.getElementById('editId');
     const cutiForm = document.getElementById('cutiForm');
@@ -450,7 +488,6 @@
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     
-    // Tentukan aksi dan teruskan rowIndex jika mode edit
     if (editIdVal) {
       data.action = 'updateDataCuti';
       data.rowIndex = editIdVal;
@@ -509,57 +546,92 @@
     });
   }
 
-  function cariDataOlehNip() {
+  // ==========================================================
+  // RIWAYAT & CETAK DATA CUTI BERDASARKAN TIMESTAMP
+  // ==========================================================
+  function muatRiwayatCutiOlehNip() {
     const nipInput = document.getElementById('inputNipCari');
     const nip = nipInput ? nipInput.value.trim() : '';
     const status = document.getElementById('searchStatus');
+    const containerSelect = document.getElementById('containerSelectRiwayat');
+    const selectRiwayat = document.getElementById('selectRiwayatCuti');
     const btnCari = document.getElementById('btnCari');
 
     if (!nip) {
-      alert("Silakan masukkan NIP terlebih dahulu!");
+      if (status) {
+        status.innerText = "NIP tidak ditemukan. Silakan login terlebih dahulu.";
+        status.style.color = "red";
+      }
       return;
     }
 
-    if (btnCari) btnCari.disabled = true;
     if (status) {
-      status.innerText = "Sedang mencari data...";
+      status.innerText = "Memuat riwayat pengajuan cuti...";
       status.style.color = "blue";
     }
+    if (btnCari) btnCari.disabled = true;
 
-    const targetUrl = `${WEB_APP_URL}?action=cari&nip=${encodeURIComponent(nip)}`;
-
-    fetch(targetUrl, {
+    fetch(`${WEB_APP_URL}?action=getRiwayatCuti&nip=${encodeURIComponent(nip)}`, {
       method: 'GET',
       redirect: 'follow'
     })
-    .then(response => {
-      if (!response.ok) throw new Error("Jaringan bermasalah atau CORS terblokir");
-      return response.json();
-    })
+    .then(res => res.json())
     .then(result => {
-      if (result && result.success) {
-        localStorage.setItem('previewCutiData', JSON.stringify(result.data));
+      if (result && result.success && Array.isArray(result.data) && result.data.length > 0) {
+        dataRiwayatGlobal = result.data;
+        if (selectRiwayat) selectRiwayat.innerHTML = '';
+
+        dataRiwayatGlobal.forEach((item, index) => {
+          const option = document.createElement('option');
+          option.value = index;
+          
+          const tglPengajuan = formatTanggalWaktu(item.timestamp);
+          const tglMulai = formatTanggal(item.mulaiTanggal);
+          const tglSampai = formatTanggal(item.sampaiTanggal);
+          
+          option.text = `${tglPengajuan} | ${item.jenisCuti} (${tglMulai} s.d ${tglSampai})`;
+          if (selectRiwayat) selectRiwayat.appendChild(option);
+        });
+
+        if (containerSelect) containerSelect.style.display = 'block';
+        if (btnCari) btnCari.disabled = false;
         if (status) {
-          status.innerText = "Data ditemukan! Membuka halaman preview...";
+          status.innerText = `Ditemukan ${result.data.length} riwayat pengajuan cuti.`;
           status.style.color = "green";
         }
-        window.location.href = `preview.html?nip=${encodeURIComponent(nip)}`;
       } else {
+        if (containerSelect) containerSelect.style.display = 'none';
         if (status) {
-          status.innerText = result.message || "NIP tidak ditemukan atau belum pernah mengajukan cuti.";
+          status.innerText = result ? (result.message || "Belum ada riwayat pengajuan cuti untuk NIP ini.") : "Data riwayat kosong.";
           status.style.color = "red";
         }
-        if (btnCari) btnCari.disabled = false;
       }
     })
     .catch(err => {
       console.error(err);
       if (status) {
-        status.innerText = "Gagal mengambil data. Pastikan file diakses via web server/GitHub Pages.";
+        status.innerText = "Gagal memuat riwayat cuti. Periksa koneksi internet.";
         status.style.color = "red";
       }
-      if (btnCari) btnCari.disabled = false;
     });
+  }
+
+  function cetakCutiTerpilih() {
+    const selectRiwayat = document.getElementById('selectRiwayatCuti');
+    const indexTerpilih = selectRiwayat ? selectRiwayat.value : '';
+
+    if (indexTerpilih === '' || !dataRiwayatGlobal[indexTerpilih]) {
+      alert("Silakan pilih salah satu riwayat tanggal pengajuan cuti!");
+      return;
+    }
+
+    const dataTerpilih = dataRiwayatGlobal[indexTerpilih];
+
+    // Simpan data spesifik ke LocalStorage untuk dibaca oleh preview.html
+    localStorage.setItem('previewCutiData', JSON.stringify(dataTerpilih));
+
+    // Redirect ke halaman preview
+    window.location.href = `preview.html?nip=${encodeURIComponent(dataTerpilih.nip)}&row=${dataTerpilih.rowIndex}`;
   }
 </script>
 </body>
