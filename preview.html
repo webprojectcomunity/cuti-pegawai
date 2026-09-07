@@ -289,8 +289,8 @@
   // Konfigurasi Endpoint API Web App Google Apps Script
   const API_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
 
-  // Fungsi Helper: Membuka Pembungkus Data (Array / Nested Object / JSON String)
-  function unwrapData(rawData) {
+  // Fungsi Helper: Membuka Pembungkus Data & Mencari Timestamp yang Sesuai
+  function unwrapData(rawData, targetTimestamp = null) {
     if (!rawData) return null;
     let data = rawData;
 
@@ -305,16 +305,25 @@
       }
     }
 
-    // Jika data berupa Array, ambil item pertama
-    if (Array.isArray(data)) {
-      data = data[0] || null;
+    // Jika data terbungkus dalam { success: true, data: { ... } } atau { result: { ... } }
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      if (data.data) return unwrapData(data.data, targetTimestamp);
+      if (data.result) return unwrapData(data.result, targetTimestamp);
+      if (data.payload) return unwrapData(data.payload, targetTimestamp);
     }
 
-    // Jika data terbungkus dalam { success: true, data: { ... } } atau { result: { ... } }
-    if (data && typeof data === 'object') {
-      if (data.data && typeof data.data === 'object') return unwrapData(data.data);
-      if (data.result && typeof data.result === 'object') return unwrapData(data.result);
-      if (data.payload && typeof data.payload === 'object') return unwrapData(data.payload);
+    // Jika data berupa Array (banyak riwayat)
+    if (Array.isArray(data)) {
+      if (targetTimestamp) {
+        // Cari data yang Timestamp-nya cocok
+        const match = data.find(item => {
+          const itemTs = getFlexVal(item, 'Timestamp', 'timestamp', 'tglSekarang', 'tanggal');
+          return itemTs && String(itemTs).trim() === String(targetTimestamp).trim();
+        });
+        if (match) return match;
+      }
+      // Jika tidak ada parameter timestamp atau tidak cocok, ambil item pertama
+      data = data[0] || null;
     }
 
     return data;
@@ -397,9 +406,14 @@
     return null;
   }
 
-  async function loadDataFromAPI(nipOrId) {
+  async function loadDataFromAPI(nipOrId, timestamp = null) {
     try {
-      const response = await fetch(`${API_URL}?action=getData&nip=${encodeURIComponent(nipOrId)}`);
+      let queryUrl = `${API_URL}?action=getData&nip=${encodeURIComponent(nipOrId)}`;
+      if (timestamp) {
+        queryUrl += `&timestamp=${encodeURIComponent(timestamp)}`;
+      }
+      
+      const response = await fetch(queryUrl);
       if (!response.ok) throw new Error('Gagal terhubung ke API Server');
       const result = await response.json();
       return result;
@@ -409,9 +423,9 @@
     }
   }
 
-  function renderData(rawData) {
-    // Buka pembungkus data jika ada
-    const data = unwrapData(rawData);
+  function renderData(rawData, targetTimestamp = null) {
+    // Buka pembungkus data dan cocokkan timestamp jika berupa array
+    const data = unwrapData(rawData, targetTimestamp);
     console.log("Data Cuti Siap Di-render:", data);
 
     if (!data) {
@@ -499,6 +513,11 @@
     else if (statusPejabat.includes('tidak')) document.getElementById('check_pejabat_tidak_setuju').innerText = '✔';
 
     // II. Centang Jenis Cuti
+    // Reset centang jenis cuti
+    ['check_tahunan', 'check_besar', 'check_sakit', 'check_melahirkan', 'check_penting', 'check_luar'].forEach(id => {
+      document.getElementById(id).innerText = '';
+    });
+
     const jenisCutiVal = getFlexVal(data, 'jenisCuti', 'jenis_cuti', 'jenis') || '';
     const jenisLower = jenisCutiVal.toLowerCase();
     if (jenisLower.includes("tahunan")) document.getElementById("check_tahunan").innerText = "☑";
@@ -528,11 +547,12 @@
   document.addEventListener('DOMContentLoaded', async function() {
     const urlParams = new URLSearchParams(window.location.search);
     const nipParam = urlParams.get('nip') || urlParams.get('id');
+    const timestampParam = urlParams.get('timestamp') || urlParams.get('tgl');
 
     let rawData = null;
 
     if (nipParam) {
-      rawData = await loadDataFromAPI(nipParam);
+      rawData = await loadDataFromAPI(nipParam, timestampParam);
     }
 
     if (!rawData) {
@@ -545,7 +565,7 @@
       return;
     }
 
-    renderData(rawData);
+    renderData(rawData, timestampParam);
   });
 </script>
 </body>
