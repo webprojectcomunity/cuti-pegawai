@@ -155,7 +155,7 @@
   <!-- III. ALASAN CUTI -->
   <table class="table-custom">
     <tr class="section-header"><td>III. ALASAN CUTI</td></tr>
-    <tr><td id="disp_alasan" style="height: 18px;">-</td></tr>
+    <tr><td id="disp_alasan" style="min-height: 18px; word-wrap: break-word;">-</td></tr>
   </table>
 
   <!-- IV. LAMANYA CUTI -->
@@ -374,10 +374,11 @@
     return str || '-';
   }
 
-  // Engine Pencari Kunci Cerdas
+  // Engine Pencari Kunci Cerdas yang Diperbaiki
   function getFlexVal(obj, ...keyPatterns) {
     if (!obj || typeof obj !== 'object') return null;
 
+    // 1. Pengecekan Kunci Langsung
     for (let pattern of keyPatterns) {
       if (obj[pattern] !== undefined && obj[pattern] !== null && String(obj[pattern]).trim() !== '') {
         return String(obj[pattern]).trim();
@@ -393,16 +394,42 @@
       val: obj[k]
     })).filter(e => e.val !== undefined && e.val !== null && String(e.val).trim() !== '');
 
+    // 2. Pencocokan Eksak setelah Normalisasi Kata Kunci
     for (let pattern of keyPatterns) {
       const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (!normPattern) continue;
       const found = normEntries.find(e => e.normKey === normPattern);
       if (found) return String(found.val).trim();
     }
 
+    // 3. Penanganan Khusus untuk Karakter Tunggal seperti 'n' (Saldo Cuti Tahun Berjalan)
+    for (let pattern of keyPatterns) {
+      const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (normPattern === 'n') {
+        const found = normEntries.find(e => 
+          e.normKey === 'n' || 
+          e.normKey === 'n0' || 
+          e.normKey === 'sisan' || 
+          e.normKey === 'cutin' || 
+          e.normKey === 'sisacutin' || 
+          e.normKey === 'sisacuti' ||
+          e.normKey.endsWith('cutin') ||
+          e.normKey.endsWith('sisan')
+        );
+        if (found) return String(found.val).trim();
+      }
+    }
+
+    // 4. Pencocokan Parsial Dua Arah (Dukungan Fleksibilitas Struktur Header)
     for (let pattern of keyPatterns) {
       const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
       if (!normPattern || normPattern.length < 2) continue;
-      const found = normEntries.find(e => e.normKey.includes(normPattern));
+
+      const found = normEntries.find(e => {
+        if (e.normKey.includes(normPattern)) return true;
+        if (e.normKey.length >= 3 && normPattern.includes(e.normKey)) return true;
+        return false;
+      });
       if (found) return String(found.val).trim();
     }
 
@@ -462,10 +489,10 @@
     document.getElementById('disp_mulai').innerText = formatTglIndo(getFlexVal(data, 'mulaiTanggal', 'tglMulai', 'mulai', 'tanggalMulai'));
     document.getElementById('disp_sampai').innerText = formatTglIndo(getFlexVal(data, 'sampaiTanggal', 'tglSelesai', 'sampai', 'tanggalSelesai'));
     
-    // V. Saldo Cuti
-    document.getElementById('disp_n2').innerText = getFlexVal(data, 'n2', 'n2_saldo', 'sisacutin2', 'cutin2', 'sisa_n2', 'n-2') ?? '0';
-    document.getElementById('disp_n1').innerText = getFlexVal(data, 'n1', 'n1_saldo', 'sisacutin1', 'cutin1', 'sisa_n1', 'n-1') ?? '0';
-    document.getElementById('disp_n').innerText  = getFlexVal(data, 'n',  'n_saldo',  'sisacutin',  'cutin',  'sisa_n',  'n0')  ?? '0';
+    // V. Saldo Cuti (Dukungan Variasi Lengkap N-2, N-1, N)
+    document.getElementById('disp_n2').innerText = getFlexVal(data, 'n2', 'n-2', 'n_2', 'sisan2', 'sisa_n2', 'sisacutin2', 'sisacuti_n2', 'cutin2', 'cuti_n2', 'sisa_cuti_n2', 'saldo_n2', 'sisa2', 'cuti2', 'cutinminus2') ?? '0';
+    document.getElementById('disp_n1').innerText = getFlexVal(data, 'n1', 'n-1', 'n_1', 'sisan1', 'sisa_n1', 'sisacutin1', 'sisacuti_n1', 'cutin1', 'cuti_n1', 'sisa_cuti_n1', 'saldo_n1', 'sisa1', 'cuti1', 'cutinminus1') ?? '0';
+    document.getElementById('disp_n').innerText  = getFlexVal(data, 'n', 'n0', 'n-0', 'n_0', 'sisan', 'sisa_n', 'sisacutin', 'sisacuti_n', 'cutin', 'cuti_n', 'sisa_cuti_n', 'saldo_n', 'sisa', 'cuti', 'cutitahunini', 'cutitahunberjalan') ?? '0';
 
     // VI. Alamat & Pemohon
     document.getElementById('disp_alamat').innerText = getFlexVal(data, 'alamat', 'alamatLengkap', 'alamat_lengkap') || '-';
@@ -474,32 +501,40 @@
     document.getElementById('sign_nip').innerText = nip;
 
     // VII. Atasan Langsung
-    document.getElementById('disp_namaAtasan').innerText = getFlexVal(data, 'namaatasan', 'namaAtasan', 'atasanlangsung', 'nama_atasan', 'inputNamaAtasan') || '-';
-    document.getElementById('disp_nipAtasan').innerText = cleanNIP(getFlexVal(data, 'nipatasan', 'nipAtasan', 'nip_atasan', 'inputNipAtasan'));
-    document.getElementById('disp_jabatanAtasan').innerText = getFlexVal(data, 'jabatanatasan', 'jabatanAtasan', 'jabatan_atasan', 'inputJabatanAtasan') || 'Plt. Kasubbag Keuangan Hukum dan SDM';
+    const namaAtasan = getFlexVal(data, 'namaatasan', 'nama_atasan', 'atasan', 'atasanlangsung', 'namaatasanlangsung', 'nama_atasan_langsung', 'inputnamaatasan', 'input_nama_atasan', 'penilai', 'namapenilai', 'nama_penilai') || '-';
+    const nipAtasan = cleanNIP(getFlexVal(data, 'nipatasan', 'nip_atasan', 'nipatasanlangsung', 'nip_atasan_langsung', 'inputnipatasan', 'input_nip_atasan', 'nippenilai', 'nip_penilai'));
+    const jabatanAtasan = getFlexVal(data, 'jabatanatasan', 'jabatan_atasan', 'jabatanatasanlangsung', 'jabatan_atasan_langsung', 'inputjabatanatasan', 'input_jabatan_atasan', 'jabatanpenilai', 'jabatan_penilai') || 'Plt. Kasubbag Keuangan Hukum dan SDM';
+
+    document.getElementById('disp_namaAtasan').innerText = namaAtasan;
+    document.getElementById('disp_nipAtasan').innerText = nipAtasan;
+    document.getElementById('disp_jabatanAtasan').innerText = jabatanAtasan;
     document.getElementById('disp_catatanAtasan').innerText = getFlexVal(data, 'catatanAtasan', 'catatan_atasan', 'catatanAtasanLangsung') || '';
 
     // Status Pertimbangan Atasan
     ['check_atasan_setuju', 'check_atasan_perubahan', 'check_atasan_ditangguhkan', 'check_atasan_tidak_setuju'].forEach(id => {
       document.getElementById(id).innerText = '';
     });
-    const statusAtasan = (getFlexVal(data, 'statusAtasan', 'status_atasan', 'pertimbanganAtasan', 'catatanAtasan') || '').toLowerCase();
+    const statusAtasan = (getFlexVal(data, 'statusAtasan', 'status_atasan', 'pertimbanganAtasan', 'pertimbangan_atasan', 'catatanAtasan') || '').toLowerCase();
     if (statusAtasan.includes('setuju') && !statusAtasan.includes('tidak')) document.getElementById('check_atasan_setuju').innerText = '✔';
     else if (statusAtasan.includes('ubah') || statusAtasan.includes('rubah')) document.getElementById('check_atasan_perubahan').innerText = '✔';
     else if (statusAtasan.includes('tangguh')) document.getElementById('check_atasan_ditangguhkan').innerText = '✔';
     else if (statusAtasan.includes('tidak')) document.getElementById('check_atasan_tidak_setuju').innerText = '✔';
 
     // VIII. Pejabat Berwenang
-    document.getElementById('disp_namaPejabat').innerText = getFlexVal(data, 'pejabatyangberwenang', 'namapejabat', 'namaPejabat', 'pejabatberwenang', 'inputNamaPejabat') || '-';
-    document.getElementById('disp_nipPejabat').innerText = cleanNIP(getFlexVal(data, 'nippejabat', 'nipPejabat', 'nip_pejabat', 'inputNipPejabat'));
-    document.getElementById('disp_jabatanPejabat').innerText = getFlexVal(data, 'jabatanpejabat', 'jabatanPejabat', 'jabatan_pejabat', 'inputJabatanPejabat') || 'Pejabat Berwenang,';
+    const namaPejabat = getFlexVal(data, 'namapejabat', 'nama_pejabat', 'pejabat', 'pejabatberwenang', 'pejabatyangberwenang', 'namapejabatberwenang', 'nama_pejabat_berwenang', 'inputnamapejabat', 'input_nama_pejabat', 'yangberwenang', 'namayangberwenang', 'sekretaris', 'namasekretaris') || '-';
+    const nipPejabat = cleanNIP(getFlexVal(data, 'nippejabat', 'nip_pejabat', 'nippejabatberwenang', 'nip_pejabat_berwenang', 'inputnippejabat', 'input_nip_pejabat', 'nipyangberwenang', 'nipsekretaris'));
+    const jabatanPejabat = getFlexVal(data, 'jabatanpejabat', 'jabatan_pejabat', 'jabatanpejabatberwenang', 'jabatan_pejabat_berwenang', 'inputjabatanpejabat', 'input_jabatan_pejabat', 'jabatanyangberwenang', 'jabatansekretaris') || 'Pejabat Berwenang,';
+
+    document.getElementById('disp_namaPejabat').innerText = namaPejabat;
+    document.getElementById('disp_nipPejabat').innerText = nipPejabat;
+    document.getElementById('disp_jabatanPejabat').innerText = jabatanPejabat;
     document.getElementById('disp_catatanPejabat').innerText = getFlexVal(data, 'catatanPejabat', 'catatan_pejabat', 'catatanPejabatBerwenang') || '';
 
     // Status Keputusan Pejabat
     ['check_pejabat_setuju', 'check_pejabat_perubahan', 'check_pejabat_ditangguhkan', 'check_pejabat_tidak_setuju'].forEach(id => {
       document.getElementById(id).innerText = '';
     });
-    const statusPejabat = (getFlexVal(data, 'statusPejabat', 'status_pejabat', 'keputusanPejabat', 'status') || '').toLowerCase();
+    const statusPejabat = (getFlexVal(data, 'statusPejabat', 'status_pejabat', 'keputusanPejabat', 'keputusan_pejabat', 'status') || '').toLowerCase();
     if (statusPejabat.includes('setuju') && !statusPejabat.includes('tidak')) document.getElementById('check_pejabat_setuju').innerText = '✔';
     else if (statusPejabat.includes('ubah') || statusPejabat.includes('rubah')) document.getElementById('check_pejabat_perubahan').innerText = '✔';
     else if (statusPejabat.includes('tangguh')) document.getElementById('check_pejabat_ditangguhkan').innerText = '✔';
@@ -525,9 +560,9 @@
       margin: 0,
       filename: `Surat_Cuti_${namaPegawai}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+      html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0 },
       jsPDF: { unit: 'cm', format: [21.5, 33], orientation: 'portrait' },
-      pagebreak: { mode: 'avoid-all' }
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
     html2pdf().set(options).from(element).save();
   }
