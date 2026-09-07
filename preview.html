@@ -280,6 +280,9 @@
 </div>
 
 <script>
+  // Konfigurasi Endpoint API Web App Google Apps Script
+  const API_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
+
   function formatTglIndo(stringTanggal) {
     if (!stringTanggal || stringTanggal === '-') return '-';
     let str = stringTanggal.toString().trim();
@@ -318,73 +321,60 @@
     return str || '-';
   }
 
-  // Engine Pencari Kunci Cerdas (Mendukung Exact Match & Substring/Partial Match)
+  // Engine Pencari Kunci Cerdas (Aman dari bentrokan huruf tunggal 'n')
   function getFlexVal(obj, ...keyPatterns) {
-  if (!obj || typeof obj !== 'object') return null;
+    if (!obj || typeof obj !== 'object') return null;
 
-  // 1. Pencocokan Langsung (Exact Match)
-  for (let pattern of keyPatterns) {
-    if (obj[pattern] !== undefined && obj[pattern] !== null && String(obj[pattern]).trim() !== '') {
-      return String(obj[pattern]).trim();
+    // 1. Pencocokan Langsung (Exact Match)
+    for (let pattern of keyPatterns) {
+      if (obj[pattern] !== undefined && obj[pattern] !== null && String(obj[pattern]).trim() !== '') {
+        return String(obj[pattern]).trim();
+      }
+    }
+
+    const keys = Object.keys(obj);
+    if (keys.length === 0) return null;
+
+    const normEntries = keys.map(k => ({
+      origKey: k,
+      normKey: k.toLowerCase().replace(/[^a-z0-9]/g, ''),
+      val: obj[k]
+    })).filter(e => e.val !== undefined && e.val !== null && String(e.val).trim() !== '');
+
+    // 2. Pencocokan Normalisasi Tepat (Tanpa spasi & simbol)
+    for (let pattern of keyPatterns) {
+      const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const found = normEntries.find(e => e.normKey === normPattern);
+      if (found) return String(found.val).trim();
+    }
+
+    // 3. Pencocokan Parsial (Hanya untuk kata kunci >= 2 karakter)
+    for (let pattern of keyPatterns) {
+      const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (!normPattern || normPattern.length < 2) continue; // Kunci 1 karakter wajib Exact Match
+
+      const found = normEntries.find(e => e.normKey.includes(normPattern));
+      if (found) return String(found.val).trim();
+    }
+
+    return null;
+  }
+
+  // Fungsi untuk mengambil/sinkronisasi data langsung dari API Google Apps Script
+  async function loadDataFromAPI(nipOrId) {
+    try {
+      const response = await fetch(`${API_URL}?action=getData&nip=${encodeURIComponent(nipOrId)}`);
+      if (!response.ok) throw new Error('Gagal terhubung ke API Server');
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Error mengambil data dari API:", error);
+      return null;
     }
   }
 
-  const keys = Object.keys(obj);
-  if (keys.length === 0) return null;
-
-  const normEntries = keys.map(k => ({
-    origKey: k,
-    normKey: k.toLowerCase().replace(/[^a-z0-9]/g, ''),
-    val: obj[k]
-  })).filter(e => e.val !== undefined && e.val !== null && String(e.val).trim() !== '');
-
-  // 2. Pencocokan Normalisasi Tepat (Tanpa spasi & kapital)
-  for (let pattern of keyPatterns) {
-    const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const found = normEntries.find(e => e.normKey === normPattern);
-    if (found) return String(found.val).trim();
-  }
-
-  // 3. Pencocokan Parsial (Mendukung nama kunci 1 karakter seperti 'n')
-  for (let pattern of keyPatterns) {
-    const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (!normPattern) continue;
-
-    const found = normEntries.find(e => e.normKey.includes(normPattern));
-    if (found) return String(found.val).trim();
-  }
-
-  return null;
-}
-  
-  function downloadPDF() {
-    const element = document.getElementById('areaCetak');
-    const namaPegawai = document.getElementById('disp_nama').innerText || 'Pegawai';
-    
-    const options = {
-      margin:       0,
-      filename:     `Surat_Cuti_${namaPegawai}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
-      jsPDF:        { unit: 'cm', format: [21.5, 33], orientation: 'portrait' },
-      pagebreak:    { mode: 'avoid-all' }
-    };
-
-    html2pdf().set(options).from(element).save();
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    let dataRaw = localStorage.getItem('previewCutiData') || sessionStorage.getItem('lastCutiData');
-    
-    if (!dataRaw) {
-      alert("Data cuti tidak ditemukan! Silakan lakukan pencarian kembali.");
-      window.location.href = "index.html";
-      return;
-    }
-
-    const data = JSON.parse(dataRaw);
-    
-    // Fitur Debugging: Menampilkan Kunci/Header Data Asli di Console Browser (F12)
+  // Fungsi untuk mengisi elemen HTML template berdasarkan objek data
+  function renderData(data) {
     console.log("Data Cuti Diterima:", data);
     console.log("Kunci/Header Kolom yang Tersedia:", Object.keys(data));
 
@@ -418,15 +408,15 @@
     document.getElementById('disp_mulai').innerText = formatTglIndo(getFlexVal(data, 'mulaiTanggal', 'tglMulai', 'mulai', 'tanggalMulai'));
     document.getElementById('disp_sampai').innerText = formatTglIndo(getFlexVal(data, 'sampaiTanggal', 'tglSelesai', 'sampai', 'tanggalSelesai'));
     
-   // V. Saldo Cuti (Mengutamakan kunci 'n2', 'n1', dan 'n' sesuai output Apps Script)
-let sisaN2 = getFlexVal(data, 'n2', 'sisacutin2', 'cutin2', 'sisa_n2', 'saldo_n2', 'sisa cuti n-2', 'n-2');
-let sisaN1 = getFlexVal(data, 'n1', 'sisacutin1', 'cutin1', 'sisa_n1', 'saldo_n1', 'sisa cuti n-1', 'n-1');
-let sisaN  = getFlexVal(data, 'n',  'sisacutin',  'cutin',  'sisa_n',  'saldo_n',  'sisa cuti n',   'n0');
+    // V. Saldo Cuti (Presisi tinggi sesuai output getSaldoData: n2, n1, n)
+    let sisaN2 = getFlexVal(data, 'n2', 'sisacutin2', 'cutin2', 'sisa_n2', 'saldo_n2', 'sisa cuti n-2', 'n-2');
+    let sisaN1 = getFlexVal(data, 'n1', 'sisacutin1', 'cutin1', 'sisa_n1', 'saldo_n1', 'sisa cuti n-1', 'n-1');
+    let sisaN  = getFlexVal(data, 'n',  'sisacutin',  'cutin',  'sisa_n',  'saldo_n',  'sisa cuti n',   'n0');
 
-// Pastikan nilai '0' (angka nol) tetap ditampilkan dan tidak dianggap kosong
-document.getElementById('disp_n2').innerText = (sisaN2 !== null && sisaN2 !== undefined) ? sisaN2 : '0';
-document.getElementById('disp_n1').innerText = (sisaN1 !== null && sisaN1 !== undefined) ? sisaN1 : '0';
-document.getElementById('disp_n').innerText  = (sisaN !== null && sisaN !== undefined) ? sisaN : '0';
+    document.getElementById('disp_n2').innerText = (sisaN2 !== null && sisaN2 !== undefined) ? sisaN2 : '0';
+    document.getElementById('disp_n1').innerText = (sisaN1 !== null && sisaN1 !== undefined) ? sisaN1 : '0';
+    document.getElementById('disp_n').innerText  = (sisaN !== null && sisaN !== undefined) ? sisaN : '0';
+
     // VI. Data Alamat & Tanda Tangan Pemohon
     document.getElementById('disp_alamat').innerText = getFlexVal(data, 'alamat', 'alamatLengkap', 'alamat_lengkap') || '-';
     document.getElementById('disp_telp').innerText = getFlexVal(data, 'telepon', 'telp', 'hp', 'noHp', 'no_hp', 'inputTelepon') || '-';
@@ -442,7 +432,7 @@ document.getElementById('disp_n').innerText  = (sisaN !== null && sisaN !== unde
     document.getElementById('disp_nipAtasan').innerText = nipAtasan;
     document.getElementById('disp_jabatanAtasan').innerText = jabatanAtasan;
 
-    // VIII. Data Pejabat Berwenang (Dukungan Variasi Kata Kunci Luas)
+    // VIII. Data Pejabat Berwenang
     const namaPejabat = getFlexVal(data, 'pejabatyangberwenang', 'namapejabat', 'pejabatberwenang', 'pejabat', 'sekretaris', 'namasekretaris', 'inputNamaPejabat') || '-';
     const nipPejabat = cleanNIP(getFlexVal(data, 'nippejabat', 'nip_pejabat', 'nipsekretaris', 'inputNipPejabat'));
     const jabatanPejabat = getFlexVal(data, 'jabatanpejabat', 'jabatan_pejabat', 'jabatansekretaris', 'inputJabatanPejabat') || 'Pejabat Berwenang,';
@@ -460,6 +450,53 @@ document.getElementById('disp_n').innerText  = (sisaN !== null && sisaN !== unde
     else if (jenisLower.includes("melahirkan")) document.getElementById("check_melahirkan").innerText = "☑";
     else if (jenisLower.includes("penting")) document.getElementById("check_penting").innerText = "☑";
     else if (jenisLower.includes("luar") || jenisLower.includes("tanggungan")) document.getElementById("check_luar").innerText = "☑";
+  }
+
+  function downloadPDF() {
+    const element = document.getElementById('areaCetak');
+    const namaPegawai = document.getElementById('disp_nama').innerText || 'Pegawai';
+    
+    const options = {
+      margin:       0,
+      filename:     `Surat_Cuti_${namaPegawai}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+      jsPDF:        { unit: 'cm', format: [21.5, 33], orientation: 'portrait' },
+      pagebreak:    { mode: 'avoid-all' }
+    };
+
+    html2pdf().set(options).from(element).save();
+  }
+
+  document.addEventListener('DOMContentLoaded', async function() {
+    // 1. Cek parameter URL jika ada (misal: preview.html?nip=199001...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const nipParam = urlParams.get('nip') || urlParams.get('id');
+
+    let data = null;
+
+    // 2. Jika NIP ada di URL, coba ambil data langsung dari API
+    if (nipParam) {
+      data = await loadDataFromAPI(nipParam);
+    }
+
+    // 3. Jika tidak ada di URL atau fetch API tidak mengembalikan data, gunakan Local/Session Storage
+    if (!data) {
+      let dataRaw = localStorage.getItem('previewCutiData') || sessionStorage.getItem('lastCutiData');
+      if (dataRaw) {
+        data = JSON.parse(dataRaw);
+      }
+    }
+
+    // 4. Jika data tetap tidak ada, alihkan kembali ke Halaman Utama
+    if (!data) {
+      alert("Data cuti tidak ditemukan! Silakan lakukan pencarian kembali.");
+      window.location.href = "index.html";
+      return;
+    }
+
+    // 5. Render/tampilkan data ke elemen HTML
+    renderData(data);
   });
 </script>
 </body>
