@@ -160,38 +160,58 @@
     </div>
   </div>
 
-  <!-- Modal Pencarian Data Cuti -->
-  <div class="modal fade" id="modalCari" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Cari Data Cuti Pegawai</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <!-- Modal Riwayat & Pencarian Data Cuti -->
+<div class="modal fade" id="modalCari" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Pilih Riwayat Surat Cuti</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">NIP Pegawai</label>
+          <input type="text" id="inputNipCari" class="form-control" placeholder="NIP Pegawai" readonly style="background-color: #e9ecef;">
         </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">NIP Anda</label>
-            <input type="text" id="inputNipCari" class="form-control" placeholder="Masukkan NIP yang terdaftar" readonly style="background-color: #e9ecef;">
-          </div>
-          <div id="searchStatus" class="text-center small"></div>
+        
+        <div class="mb-3">
+          <label class="form-label">Pilih Tanggal Pengajuan (Riwayat)</label>
+          <select id="selectRiwayatTimestamp" class="form-select">
+            <option value="" disabled selected>-- Memuat riwayat... --</option>
+          </select>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-primary" id="btnCari" onclick="cariDataOlehNip()">Cari & Cetak</button>
-        </div>
+
+        <div id="searchStatus" class="text-center small"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-primary" id="btnCari" onclick="cetakDataPilihan()">Cetak Surat Cuti</button>
       </div>
     </div>
   </div>
+</div>
 
  <script>
   const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
 
   let dataPegawaiGlobal = [];
+  let riwayatCutiList = []; // Menyimpan data riwayat pengajuan cuti
 
   window.addEventListener('DOMContentLoaded', () => {
     inialisasiSesiLogin();
     muatDaftarPegawai();
+    inialisasiModalEventListener();
   });
+
+  // Event listener saat modal dibuka untuk otomatis memuat riwayat cuti
+  function inialisasiModalEventListener() {
+    const modalCariElem = document.getElementById('modalCari');
+    if (modalCariElem) {
+      modalCariElem.addEventListener('show.bs.modal', function () {
+        muatRiwayatCuti();
+      });
+    }
+  }
 
   function inialisasiSesiLogin() {
     const loggedNip = sessionStorage.getItem('logged_nip') || localStorage.getItem('logged_nip');
@@ -287,7 +307,7 @@
   }
 
   // ==========================================================
-  // EDIT DATA CUTI (MENGAMBIL DATA & MEMASUKKAN KE FORM)
+  // EDIT DATA CUTI
   // ==========================================================
   function editDataCuti() {
     const nipInput = document.getElementById('nip');
@@ -338,7 +358,6 @@
   }
 
   function tampilkanDataKeForm(data) {
-    // Simpan posisi baris (rowIndex) ke input hidden editId
     const editIdInput = document.getElementById('editId');
     if (editIdInput) editIdInput.value = data.rowIndex || data.rowId || data.id || '';
 
@@ -450,7 +469,6 @@
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     
-    // Tentukan aksi dan teruskan rowIndex jika mode edit
     if (editIdVal) {
       data.action = 'updateDataCuti';
       data.rowIndex = editIdVal;
@@ -509,57 +527,93 @@
     });
   }
 
-  function cariDataOlehNip() {
+  // ==========================================================
+  // RIWAYAT & CETAK CUTI (MODAL CARI)
+  // ==========================================================
+  function muatRiwayatCuti() {
     const nipInput = document.getElementById('inputNipCari');
     const nip = nipInput ? nipInput.value.trim() : '';
+    const selectElem = document.getElementById('selectRiwayatTimestamp');
     const status = document.getElementById('searchStatus');
-    const btnCari = document.getElementById('btnCari');
 
     if (!nip) {
-      alert("Silakan masukkan NIP terlebih dahulu!");
+      if (status) {
+        status.innerText = "NIP tidak ditemukan pada sesi.";
+        status.style.color = "red";
+      }
       return;
     }
 
-    if (btnCari) btnCari.disabled = true;
-    if (status) {
-      status.innerText = "Sedang mencari data...";
-      status.style.color = "blue";
+    if (selectElem) {
+      selectElem.innerHTML = `<option value="" disabled selected>-- Memuat riwayat... --</option>`;
     }
+    if (status) status.innerText = "";
 
-    const targetUrl = `${WEB_APP_URL}?action=cari&nip=${encodeURIComponent(nip)}`;
-
-    fetch(targetUrl, {
+    fetch(`${WEB_APP_URL}?action=getRiwayatCuti&nip=${encodeURIComponent(nip)}`, {
       method: 'GET',
       redirect: 'follow'
     })
-    .then(response => {
-      if (!response.ok) throw new Error("Jaringan bermasalah atau CORS terblokir");
-      return response.json();
-    })
+    .then(res => res.json())
     .then(result => {
-      if (result && result.success) {
-        localStorage.setItem('previewCutiData', JSON.stringify(result.data));
-        if (status) {
-          status.innerText = "Data ditemukan! Membuka halaman preview...";
-          status.style.color = "green";
+      if (result && result.success && result.data && result.data.length > 0) {
+        riwayatCutiList = result.data;
+        if (selectElem) {
+          selectElem.innerHTML = `<option value="" disabled selected>-- Pilih Tanggal Pengajuan --</option>`;
+          
+          riwayatCutiList.forEach((item, idx) => {
+            const option = document.createElement('option');
+            option.value = item.timestamp || item.tglSekarang || idx;
+            const jenis = item.jenisCuti || 'Pengajuan Cuti';
+            const tgl = item.timestamp || item.tglSekarang || '-';
+            option.textContent = `${tgl} - [${jenis}]`;
+            selectElem.appendChild(option);
+          });
         }
-        window.location.href = `preview.html?nip=${encodeURIComponent(nip)}`;
       } else {
+        if (selectElem) {
+          selectElem.innerHTML = `<option value="" disabled selected>-- Tidak ada riwayat ditemukan --</option>`;
+        }
         if (status) {
-          status.innerText = result.message || "NIP tidak ditemukan atau belum pernah mengajukan cuti.";
+          status.innerText = "Belum ada riwayat pengajuan cuti untuk NIP ini.";
           status.style.color = "red";
         }
-        if (btnCari) btnCari.disabled = false;
       }
     })
     .catch(err => {
       console.error(err);
-      if (status) {
-        status.innerText = "Gagal mengambil data. Pastikan file diakses via web server/GitHub Pages.";
-        status.style.color = "red";
+      if (selectElem) {
+        selectElem.innerHTML = `<option value="" disabled selected>-- Gagal memuat data --</option>`;
       }
-      if (btnCari) btnCari.disabled = false;
     });
+  }
+
+  function cetakDataPilihan() {
+    const nipInput = document.getElementById('inputNipCari');
+    const nip = nipInput ? nipInput.value.trim() : '';
+    const selectElem = document.getElementById('selectRiwayatTimestamp');
+    const selectedTs = selectElem ? selectElem.value : '';
+    const status = document.getElementById('searchStatus');
+
+    if (!selectedTs) {
+      alert("Silakan pilih riwayat tanggal pengajuan terlebih dahulu!");
+      return;
+    }
+
+    const selectedData = riwayatCutiList.find(item => 
+      String(item.timestamp || item.tglSekarang) === String(selectedTs)
+    );
+
+    if (selectedData) {
+      localStorage.setItem('previewCutiData', JSON.stringify(selectedData));
+      if (status) {
+        status.innerText = "Data ditemukan! Membuka halaman preview...";
+        status.style.color = "green";
+      }
+      
+      window.location.href = `preview.html?nip=${encodeURIComponent(nip)}&timestamp=${encodeURIComponent(selectedTs)}`;
+    } else {
+      alert("Data riwayat tidak valid atau tidak ditemukan.");
+    }
   }
 </script>
 </body>
