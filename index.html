@@ -269,6 +269,21 @@
       .replace(/'/g, "&#039;");
   }
 
+  // Helper untuk memformat tanggal (misal ISO string) ke format lokal (dd/mm/yyyy)
+  function formatTanggal(dateStr) {
+    if (!dateStr || dateStr === '-') return '-';
+    
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr; // Jika bukan format date yang valid, tampilkan teks aslinya
+
+    // Format ke DD/MM/YYYY
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+
+    return `${day}/${month}/${year}`;
+  }
+
   // Helper Kompresi Gambar Menggunakan HTML5 Canvas
   function compressImage(file, maxWidth = 1200, quality = 0.7) {
     return new Promise((resolve) => {
@@ -532,13 +547,16 @@
             `;
           }
 
+          // Fallback key untuk tanggal pengajuan
+          const tglPengajuan = r.tanggalPengajuan || r.tglPengajuan || r.timestamp || r.tanggal || '-';
+
           htmlRows += `
             <tr>
               <td class="text-center">${idx + 1}</td>
-              <td>${escapeHtml(r.tanggalPengajuan)}</td>
+              <td>${escapeHtml(formatTanggal(tglPengajuan))}</td>
               <td><span class="fw-semibold text-primary">${escapeHtml(r.jenisCuti)}</span></td>
               <td class="text-center"><span class="badge bg-secondary">${r.lamaCuti || 0} Hari</span></td>
-              <td>${escapeHtml(r.mulaiTanggal)} <br><small class="text-muted">s.d.</small> ${escapeHtml(r.sampaiTanggal)}</td>
+              <td>${escapeHtml(formatTanggal(r.mulaiTanggal))} <br><small class="text-muted">s.d.</small> ${escapeHtml(formatTanggal(r.sampaiTanggal))}</td>
               <td>${escapeHtml(r.alasan)}</td>
               <td><small>${escapeHtml(r.alamat)}</small></td>
               <td class="text-center">${linkFile}</td>
