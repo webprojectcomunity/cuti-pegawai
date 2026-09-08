@@ -136,9 +136,9 @@
               <i class="bi bi-send-fill me-1"></i> Kirim Permintaan Cuti
             </button>
             
-            <!-- 2. Tombol Edit Data Cuti -->
-            <button type="button" class="btn btn-warning btn-lg fw-bold text-dark" id="btnEdit" onclick="editDataCuti()">
-              <i class="bi bi-pencil-square me-1"></i> Edit Data Cuti
+            <!-- 2. Tombol Edit Data Cuti Terakhir -->
+            <button type="button" class="btn btn-warning btn-lg fw-bold text-dark" id="btnEdit" onclick="editDataCutiTerakhir()">
+              <i class="bi bi-pencil-square me-1"></i> Edit Data Cuti Terakhir
             </button>
 
             <!-- 3. Tombol Batal Edit (Awalnya tersembunyi) -->
@@ -150,7 +150,7 @@
 
             <!-- 4. Tombol Cetak / Lihat -->
             <button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalCari">
-              <i class="bi bi-printer me-1"></i> Cetak / Lihat Surat Cuti (Input NIP)
+              <i class="bi bi-printer me-1"></i> Cetak / Lihat Surat Cuti
             </button>
           </div>
         </form>
@@ -161,41 +161,41 @@
   </div>
 
   <!-- Modal Riwayat & Pencarian Data Cuti -->
-<div class="modal fade" id="modalCari" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Pilih Riwayat Surat Cuti</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <label class="form-label">NIP Pegawai</label>
-          <input type="text" id="inputNipCari" class="form-control" placeholder="NIP Pegawai" readonly style="background-color: #e9ecef;">
+  <div class="modal fade" id="modalCari" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Pilih Riwayat Surat Cuti</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        
-        <div class="mb-3">
-          <label class="form-label">Pilih Tanggal Pengajuan (Riwayat)</label>
-          <select id="selectRiwayatTimestamp" class="form-select">
-            <option value="" disabled selected>-- Memuat riwayat... --</option>
-          </select>
-        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">NIP Pegawai</label>
+            <input type="text" id="inputNipCari" class="form-control" placeholder="NIP Pegawai" readonly style="background-color: #e9ecef;">
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Pilih Tanggal Pengajuan (Riwayat)</label>
+            <select id="selectRiwayatTimestamp" class="form-select">
+              <option value="" disabled selected>-- Memuat riwayat... --</option>
+            </select>
+          </div>
 
-        <div id="searchStatus" class="text-center small"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-primary" id="btnCari" onclick="cetakDataPilihan()">Cetak Surat Cuti</button>
+          <div id="searchStatus" class="text-center small"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary" id="btnCari" onclick="cetakDataPilihan()">Cetak Surat Cuti</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
- <script>
+<script>
   const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
 
   let dataPegawaiGlobal = [];
-  let riwayatCutiList = []; // Menyimpan data riwayat pengajuan cuti
+  let riwayatCutiList = []; 
 
   window.addEventListener('DOMContentLoaded', () => {
     inialisasiSesiLogin();
@@ -203,7 +203,6 @@
     inialisasiModalEventListener();
   });
 
-  // Event listener saat modal dibuka untuk otomatis memuat riwayat cuti
   function inialisasiModalEventListener() {
     const modalCariElem = document.getElementById('modalCari');
     if (modalCariElem) {
@@ -240,7 +239,7 @@
     })
     .then(response => response.json())
     .then(result => {
-      if (result && result.success) {
+      if (result && result.success && Array.isArray(result.data)) {
         dataPegawaiGlobal = result.data;
         const datalist = document.getElementById('listPegawai');
         if (datalist) {
@@ -307,26 +306,27 @@
   }
 
   // ==========================================================
-  // EDIT DATA CUTI
+  // EDIT DATA CUTI TERAKHIR
   // ==========================================================
-  function editDataCuti() {
+  function editDataCutiTerakhir() {
     const nipInput = document.getElementById('nip');
     const nip = nipInput ? nipInput.value.trim() : '';
     const status = document.getElementById('statusMessage');
     const btnEdit = document.getElementById('btnEdit');
 
     if (!nip) {
-      alert("NIP tidak ditemukan. Silakan login kembali atau pastikan NIP terisi!");
+      alert("NIP tidak ditemukan. Silakan isi NIP atau login terlebih dahulu!");
       return;
     }
 
     if (btnEdit) btnEdit.disabled = true;
     if (status) {
-      status.innerText = "Mencari data cuti untuk diedit...";
+      status.innerText = "Mencari data pengajuan cuti terakhir...";
       status.style.color = "blue";
     }
 
-    fetch(`${WEB_APP_URL}?action=cari&nip=${encodeURIComponent(nip)}`, {
+    // Menggunakan action getLatestCuti sesuai script GS
+    fetch(`${WEB_APP_URL}?action=getLatestCuti&nip=${encodeURIComponent(nip)}`, {
       method: 'GET',
       redirect: 'follow'
     })
@@ -359,7 +359,7 @@
 
   function tampilkanDataKeForm(data) {
     const editIdInput = document.getElementById('editId');
-    if (editIdInput) editIdInput.value = data.rowIndex || data.rowId || data.id || '';
+    if (editIdInput) editIdInput.value = data.rowIndex || '';
 
     if (data.nama) document.getElementById('nama').value = data.nama;
     if (data.nip) document.getElementById('nip').value = data.nip;
@@ -375,11 +375,11 @@
 
     if (data.alamat) document.getElementById('alamat').value = data.alamat;
     
-    if (data.telepon || data.inputTelepon) {
-      let hp = String(data.telepon || data.inputTelepon).replace(/[^0-9]/g, '');
+    if (data.telepon) {
+      let hp = String(data.telepon).replace(/[^0-9]/g, '');
       if (hp.startsWith('62')) hp = hp.substring(2);
       if (hp.startsWith('0')) hp = hp.substring(1);
-      const telpElem = document.getElementById('inputTelepon') || document.getElementById('telepon');
+      const telpElem = document.getElementById('inputTelepon');
       if (telpElem) telpElem.value = hp;
     }
 
@@ -450,7 +450,7 @@
   }
 
   // ==========================================================
-  // SUBMIT FORM (TAMBAH BARU / PERBARUI DATA)
+  // SUBMIT FORM (SIMPAN BARU / UPDATE)
   // ==========================================================
   function submitForm(event) {
     event.preventDefault();
@@ -528,7 +528,7 @@
   }
 
   // ==========================================================
-  // RIWAYAT & CETAK CUTI (MODAL CARI)
+  // RIWAYAT & CETAK CUTI
   // ==========================================================
   function muatRiwayatCuti() {
     const nipInput = document.getElementById('inputNipCari');
@@ -555,16 +555,16 @@
     })
     .then(res => res.json())
     .then(result => {
-      if (result && result.success && result.data && result.data.length > 0) {
+      if (result && result.success && Array.isArray(result.data) && result.data.length > 0) {
         riwayatCutiList = result.data;
         if (selectElem) {
           selectElem.innerHTML = `<option value="" disabled selected>-- Pilih Tanggal Pengajuan --</option>`;
           
-          riwayatCutiList.forEach((item, idx) => {
+          riwayatCutiList.forEach((item) => {
             const option = document.createElement('option');
-            option.value = item.timestamp || item.tglSekarang || idx;
+            option.value = item.timestamp;
             const jenis = item.jenisCuti || 'Pengajuan Cuti';
-            const tgl = item.timestamp || item.tglSekarang || '-';
+            const tgl = item.timestamp || '-';
             option.textContent = `${tgl} - [${jenis}]`;
             selectElem.appendChild(option);
           });
@@ -600,7 +600,7 @@
     }
 
     const selectedData = riwayatCutiList.find(item => 
-      String(item.timestamp || item.tglSekarang) === String(selectedTs)
+      String(item.timestamp) === String(selectedTs)
     );
 
     if (selectedData) {
@@ -610,6 +610,7 @@
         status.style.color = "green";
       }
       
+      // Buka URL preview dengan parameter nip dan timestamp
       window.location.href = `preview.html?nip=${encodeURIComponent(nip)}&timestamp=${encodeURIComponent(selectedTs)}`;
     } else {
       alert("Data riwayat tidak valid atau tidak ditemukan.");
