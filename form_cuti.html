@@ -136,9 +136,9 @@
               <i class="bi bi-send-fill me-1"></i> Kirim Permintaan Cuti
             </button>
             
-            <!-- 2. Tombol Edit Data Cuti Terakhir -->
-            <button type="button" class="btn btn-warning btn-lg fw-bold text-dark" id="btnEdit" onclick="editDataCutiTerakhir()">
-              <i class="bi bi-pencil-square me-1"></i> Edit Data Cuti Terakhir
+            <!-- 2. Tombol Edit Data Cuti -->
+            <button type="button" class="btn btn-warning btn-lg fw-bold text-dark" id="btnEdit" onclick="editDataCuti()">
+              <i class="bi bi-pencil-square me-1"></i> Edit Data Cuti
             </button>
 
             <!-- 3. Tombol Batal Edit (Awalnya tersembunyi) -->
@@ -150,7 +150,7 @@
 
             <!-- 4. Tombol Cetak / Lihat -->
             <button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#modalCari">
-              <i class="bi bi-printer me-1"></i> Cetak / Lihat Surat Cuti
+              <i class="bi bi-printer me-1"></i> Cetak / Lihat Surat Cuti (Input NIP)
             </button>
           </div>
         </form>
@@ -160,57 +160,38 @@
     </div>
   </div>
 
-  <!-- Modal Riwayat & Pencarian Data Cuti -->
+  <!-- Modal Pencarian Data Cuti -->
   <div class="modal fade" id="modalCari" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Pilih Riwayat Surat Cuti</h5>
+          <h5 class="modal-title">Cari Data Cuti Pegawai</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label">NIP Pegawai</label>
-            <input type="text" id="inputNipCari" class="form-control" placeholder="NIP Pegawai" readonly style="background-color: #e9ecef;">
+            <label class="form-label">NIP Anda</label>
+            <input type="text" id="inputNipCari" class="form-control" placeholder="Masukkan NIP yang terdaftar" readonly style="background-color: #e9ecef;">
           </div>
-          
-          <div class="mb-3">
-            <label class="form-label">Pilih Tanggal Pengajuan (Riwayat)</label>
-            <select id="selectRiwayatTimestamp" class="form-select">
-              <option value="" disabled selected>-- Memuat riwayat... --</option>
-            </select>
-          </div>
-
           <div id="searchStatus" class="text-center small"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-primary" id="btnCari" onclick="cetakDataPilihan()">Cetak Surat Cuti</button>
+          <button type="button" class="btn btn-primary" id="btnCari" onclick="cariDataOlehNip()">Cari & Cetak</button>
         </div>
       </div>
     </div>
   </div>
 
-<script>
+ <script>
   const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
 
   let dataPegawaiGlobal = [];
-  let riwayatCutiList = []; 
 
   window.addEventListener('DOMContentLoaded', () => {
     inialisasiSesiLogin();
     muatDaftarPegawai();
-    inialisasiModalEventListener();
   });
-
-  function inialisasiModalEventListener() {
-    const modalCariElem = document.getElementById('modalCari');
-    if (modalCariElem) {
-      modalCariElem.addEventListener('show.bs.modal', function () {
-        muatRiwayatCuti();
-      });
-    }
-  }
 
   function inialisasiSesiLogin() {
     const loggedNip = sessionStorage.getItem('logged_nip') || localStorage.getItem('logged_nip');
@@ -239,7 +220,7 @@
     })
     .then(response => response.json())
     .then(result => {
-      if (result && result.success && Array.isArray(result.data)) {
+      if (result && result.success) {
         dataPegawaiGlobal = result.data;
         const datalist = document.getElementById('listPegawai');
         if (datalist) {
@@ -306,27 +287,26 @@
   }
 
   // ==========================================================
-  // EDIT DATA CUTI TERAKHIR
+  // EDIT DATA CUTI (MENGAMBIL DATA & MEMASUKKAN KE FORM)
   // ==========================================================
-  function editDataCutiTerakhir() {
+  function editDataCuti() {
     const nipInput = document.getElementById('nip');
     const nip = nipInput ? nipInput.value.trim() : '';
     const status = document.getElementById('statusMessage');
     const btnEdit = document.getElementById('btnEdit');
 
     if (!nip) {
-      alert("NIP tidak ditemukan. Silakan isi NIP atau login terlebih dahulu!");
+      alert("NIP tidak ditemukan. Silakan login kembali atau pastikan NIP terisi!");
       return;
     }
 
     if (btnEdit) btnEdit.disabled = true;
     if (status) {
-      status.innerText = "Mencari data pengajuan cuti terakhir...";
+      status.innerText = "Mencari data cuti untuk diedit...";
       status.style.color = "blue";
     }
 
-    // Menggunakan action getLatestCuti sesuai script GS
-    fetch(`${WEB_APP_URL}?action=getLatestCuti&nip=${encodeURIComponent(nip)}`, {
+    fetch(`${WEB_APP_URL}?action=cari&nip=${encodeURIComponent(nip)}`, {
       method: 'GET',
       redirect: 'follow'
     })
@@ -358,8 +338,9 @@
   }
 
   function tampilkanDataKeForm(data) {
+    // Simpan posisi baris (rowIndex) ke input hidden editId
     const editIdInput = document.getElementById('editId');
-    if (editIdInput) editIdInput.value = data.rowIndex || '';
+    if (editIdInput) editIdInput.value = data.rowIndex || data.rowId || data.id || '';
 
     if (data.nama) document.getElementById('nama').value = data.nama;
     if (data.nip) document.getElementById('nip').value = data.nip;
@@ -375,11 +356,11 @@
 
     if (data.alamat) document.getElementById('alamat').value = data.alamat;
     
-    if (data.telepon) {
-      let hp = String(data.telepon).replace(/[^0-9]/g, '');
+    if (data.telepon || data.inputTelepon) {
+      let hp = String(data.telepon || data.inputTelepon).replace(/[^0-9]/g, '');
       if (hp.startsWith('62')) hp = hp.substring(2);
       if (hp.startsWith('0')) hp = hp.substring(1);
-      const telpElem = document.getElementById('inputTelepon');
+      const telpElem = document.getElementById('inputTelepon') || document.getElementById('telepon');
       if (telpElem) telpElem.value = hp;
     }
 
@@ -450,7 +431,7 @@
   }
 
   // ==========================================================
-  // SUBMIT FORM (SIMPAN BARU / UPDATE)
+  // SUBMIT FORM (TAMBAH BARU / PERBARUI DATA)
   // ==========================================================
   function submitForm(event) {
     event.preventDefault();
@@ -469,6 +450,7 @@
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     
+    // Tentukan aksi dan teruskan rowIndex jika mode edit
     if (editIdVal) {
       data.action = 'updateDataCuti';
       data.rowIndex = editIdVal;
@@ -527,94 +509,57 @@
     });
   }
 
-  // ==========================================================
-  // RIWAYAT & CETAK CUTI
-  // ==========================================================
-  function muatRiwayatCuti() {
+  function cariDataOlehNip() {
     const nipInput = document.getElementById('inputNipCari');
     const nip = nipInput ? nipInput.value.trim() : '';
-    const selectElem = document.getElementById('selectRiwayatTimestamp');
     const status = document.getElementById('searchStatus');
+    const btnCari = document.getElementById('btnCari');
 
     if (!nip) {
-      if (status) {
-        status.innerText = "NIP tidak ditemukan pada sesi.";
-        status.style.color = "red";
-      }
+      alert("Silakan masukkan NIP terlebih dahulu!");
       return;
     }
 
-    if (selectElem) {
-      selectElem.innerHTML = `<option value="" disabled selected>-- Memuat riwayat... --</option>`;
+    if (btnCari) btnCari.disabled = true;
+    if (status) {
+      status.innerText = "Sedang mencari data...";
+      status.style.color = "blue";
     }
-    if (status) status.innerText = "";
 
-    fetch(`${WEB_APP_URL}?action=getRiwayatCuti&nip=${encodeURIComponent(nip)}`, {
+    const targetUrl = `${WEB_APP_URL}?action=cari&nip=${encodeURIComponent(nip)}`;
+
+    fetch(targetUrl, {
       method: 'GET',
       redirect: 'follow'
     })
-    .then(res => res.json())
+    .then(response => {
+      if (!response.ok) throw new Error("Jaringan bermasalah atau CORS terblokir");
+      return response.json();
+    })
     .then(result => {
-      if (result && result.success && Array.isArray(result.data) && result.data.length > 0) {
-        riwayatCutiList = result.data;
-        if (selectElem) {
-          selectElem.innerHTML = `<option value="" disabled selected>-- Pilih Tanggal Pengajuan --</option>`;
-          
-          riwayatCutiList.forEach((item) => {
-            const option = document.createElement('option');
-            option.value = item.timestamp;
-            const jenis = item.jenisCuti || 'Pengajuan Cuti';
-            const tgl = item.timestamp || '-';
-            option.textContent = `${tgl} - [${jenis}]`;
-            selectElem.appendChild(option);
-          });
-        }
-      } else {
-        if (selectElem) {
-          selectElem.innerHTML = `<option value="" disabled selected>-- Tidak ada riwayat ditemukan --</option>`;
-        }
+      if (result && result.success) {
+        localStorage.setItem('previewCutiData', JSON.stringify(result.data));
         if (status) {
-          status.innerText = "Belum ada riwayat pengajuan cuti untuk NIP ini.";
+          status.innerText = "Data ditemukan! Membuka halaman preview...";
+          status.style.color = "green";
+        }
+        window.location.href = `preview.html?nip=${encodeURIComponent(nip)}`;
+      } else {
+        if (status) {
+          status.innerText = result.message || "NIP tidak ditemukan atau belum pernah mengajukan cuti.";
           status.style.color = "red";
         }
+        if (btnCari) btnCari.disabled = false;
       }
     })
     .catch(err => {
       console.error(err);
-      if (selectElem) {
-        selectElem.innerHTML = `<option value="" disabled selected>-- Gagal memuat data --</option>`;
-      }
-    });
-  }
-
-  function cetakDataPilihan() {
-    const nipInput = document.getElementById('inputNipCari');
-    const nip = nipInput ? nipInput.value.trim() : '';
-    const selectElem = document.getElementById('selectRiwayatTimestamp');
-    const selectedTs = selectElem ? selectElem.value : '';
-    const status = document.getElementById('searchStatus');
-
-    if (!selectedTs) {
-      alert("Silakan pilih riwayat tanggal pengajuan terlebih dahulu!");
-      return;
-    }
-
-    const selectedData = riwayatCutiList.find(item => 
-      String(item.timestamp) === String(selectedTs)
-    );
-
-    if (selectedData) {
-      localStorage.setItem('previewCutiData', JSON.stringify(selectedData));
       if (status) {
-        status.innerText = "Data ditemukan! Membuka halaman preview...";
-        status.style.color = "green";
+        status.innerText = "Gagal mengambil data. Pastikan file diakses via web server/GitHub Pages.";
+        status.style.color = "red";
       }
-      
-      // Buka URL preview dengan parameter nip dan timestamp
-      window.location.href = `preview.html?nip=${encodeURIComponent(nip)}&timestamp=${encodeURIComponent(selectedTs)}`;
-    } else {
-      alert("Data riwayat tidak valid atau tidak ditemukan.");
-    }
+      if (btnCari) btnCari.disabled = false;
+    });
   }
 </script>
 </body>
