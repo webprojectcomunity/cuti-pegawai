@@ -7,10 +7,11 @@
   <title>Preview & Cetak Surat Cuti</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   
-  <!-- Library Auto-Download PDF -->
+  <!-- Library untuk Auto-Download PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
+    /* Reset & standar box model */
     * {
       box-sizing: border-box;
     }
@@ -19,11 +20,11 @@
       background-color: #f0f2f5; 
       padding: 10px 0; 
       font-family: "Times New Roman", Times, serif; 
-      font-size: 12px;
+      font-size: 12px; /* Sedikit dirampingkan agar spasi teks aman */
       line-height: 1.15; 
     }
 
-    /* Ukuran Kertas F4 (21.5cm x 33cm) */
+    /* Mengunci Ukuran Kertas F4 (21.5cm x 33cm) */
     .paper { 
       background: white; 
       padding: 0.6cm 1cm; 
@@ -32,19 +33,19 @@
       max-height: 33cm;
       margin: auto;
       box-shadow: 0 0 10px rgba(0,0,0,0.15);
-      overflow: hidden;
+      overflow: hidden; /* Mencegah elemen meluber ke luar kontainer */
     }
 
     .table-custom {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 3px; 
-      page-break-inside: avoid;
+      page-break-inside: avoid; /* Memaksa tabel tetap dalam satu halaman */
     }
 
     .table-custom td, .table-custom th {
       border: 1px solid black;
-      padding: 1.5px 4px;
+      padding: 1.5px 4px; /* Padding dipresisikan */
       vertical-align: top;
       font-size: 12px;
     }
@@ -60,10 +61,12 @@
     
     p { margin-bottom: 1px; }
 
+    /* Pengatur tinggi area tanda tangan yang aman dan rapi */
     .space-ttd {
-      height: 38px; 
+      height: 40px; 
     }
 
+    /* Aturan Cetak Kertas (Print View) */
     @media print {
       @page {
         size: 21.5cm 33cm;
@@ -84,7 +87,7 @@
         margin: 0 auto; 
         width: 21.5cm !important; 
         height: 33cm !important; 
-        padding: 0.5cm 1cm;
+        padding: 0.6cm 1cm;
       }
       .no-print { display: none !important; }
     }
@@ -92,7 +95,7 @@
 </head>
 <body>
 
-<!-- Panel Navigasi -->
+<!-- Panel Navigasi / Kontrol -->
 <div class="container no-print mb-3 d-flex justify-content-between align-items-center" style="max-width: 21.5cm;">
   <a href="index.html" class="btn btn-sm btn-outline-secondary">← Kembali ke Form</a>
   <div>
@@ -103,16 +106,16 @@
 
 <div class="paper" id="areaCetak">
   <!-- Header Tanggal & Tujuan -->
-  <div style="margin-left: 60%; margin-bottom: 35px;">
-    <p>Karimun, <span id="tglSekarang">-</span></p>
+  <div style="margin-left: 60%; margin-bottom: 50px;">
+    <p>Karimun, <span id="tglSekarang"></span></p>
     <p>Kepada</p>
     <p>Yth. <b>Sekretaris KPU Kab. Karimun</b></p>
-    <p style="margin-left: 15px;">cq. Plt. Kasubbag Keuangan Hukum dan SDM</p>
+    <p style="margin-left: 15px;">cq. Plt. Kasubbag Hukum dan SDM</p>
     <p>di -</p>
     <p style="margin-left: 15px;">Tempat</p>
   </div>
 
-  <div class="text-center fw-bold mb-2" style="font-size: 14px; margin-top: 10px;">FORMULIR PERMINTAAN DAN PEMBERIAN CUTI</div>
+  <div class="text-center fw-bold mb-2" style="font-size: 14px; margin-top: 20;">FORMULIR PERMINTAAN DAN PEMBERIAN CUTI</div>
 
   <!-- I. DATA PEGAWAI -->
   <table class="table-custom">
@@ -155,7 +158,7 @@
   <!-- III. ALASAN CUTI -->
   <table class="table-custom">
     <tr class="section-header"><td>III. ALASAN CUTI</td></tr>
-    <tr><td id="disp_alasan" style="min-height: 18px; word-wrap: break-word;">-</td></tr>
+    <tr><td id="disp_alasan" style="height: 18px;">-</td></tr>
   </table>
 
   <!-- IV. LAMANYA CUTI -->
@@ -192,7 +195,7 @@
   </table>
 
   <!-- VI. ALAMAT & PEMOHON -->
-  <table class="table-custom">
+  <table class="table-custom" border="1">
     <tr class="section-header">
       <td colspan="3"><b>VI. ALAMAT SELAMA MENJALANKAN CUTI</b></td>
     </tr>
@@ -213,7 +216,7 @@
   </table>
 
   <!-- VII. ATASAN LANGSUNG -->
-  <table class="table-custom">
+  <table class="table-custom" border="1">
     <tr class="section-header">
       <td colspan="4"><b>VII. PERTIMBANGAN ATASAN LANGSUNG **</b></td>
     </tr>
@@ -224,10 +227,7 @@
       <td width="42%">TIDAK DISETUJUI ****</td>
     </tr>
     <tr class="text-center" style="height: 15px;">
-      <td id="check_atasan_setuju" class="fw-bold"></td>
-      <td id="check_atasan_perubahan" class="fw-bold"></td>
-      <td id="check_atasan_ditangguhkan" class="fw-bold"></td>
-      <td id="check_atasan_tidak_setuju" class="fw-bold"></td>
+      <td></td><td></td><td></td><td></td>
     </tr>
     <tr>
       <td colspan="3" style="vertical-align: top; padding: 2px 4px;">
@@ -243,7 +243,7 @@
   </table>
 
   <!-- VIII. PEJABAT BERWENANG -->
-  <table class="table-custom">
+  <table class="table-custom" border="1">
     <tr class="section-header">
       <td colspan="4"><b>VIII. KEPUTUSAN PEJABAT YANG BERWENANG MEMBERIKAN CUTI **</b></td>
     </tr>
@@ -254,10 +254,7 @@
       <td width="42%">TIDAK DISETUJUI ****</td>
     </tr>
     <tr class="text-center" style="height: 15px;">
-      <td id="check_pejabat_setuju" class="fw-bold"></td>
-      <td id="check_pejabat_perubahan" class="fw-bold"></td>
-      <td id="check_pejabat_ditangguhkan" class="fw-bold"></td>
-      <td id="check_pejabat_tidak_setuju" class="fw-bold"></td>
+      <td></td><td></td><td></td><td></td>
     </tr>
     <tr>
       <td colspan="3" style="vertical-align: top; padding: 2px 4px;">
@@ -272,8 +269,8 @@
     </tr>
   </table>
 
-  <!-- FOOTER CATATAN -->
-  <div style="font-size: 10px; margin-top: 15px; line-height: 1.15; font-family: Arial, sans-serif;">
+  <!-- FOOTER CATATAN (Atur margin-top di sini) -->
+  <div style="font-size: 10px; margin-top: 50px; line-height: 1.15; font-family: Arial, sans-serif;">
     <div style="margin-bottom: 2px;">Catatan:</div>
     <div>*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Coret yang tidak perlu</div>
     <div>**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pilih salah satu dengan memberi tanda centang (✔)</div>
@@ -284,64 +281,14 @@
     <div>N-2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Sisa cuti 2 tahun sebelumnya</div>
   </div>
 </div>
-
 <script>
-  // Endpoint Web App Google Apps Script
-  const API_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
-
-  // Engine Pembungkus Data dengan Fuzzy Matching Timestamp
-  function unwrapData(rawData, targetTimestamp = null) {
-    if (!rawData) return null;
-    let data = rawData;
-
-    if (typeof data === 'string') {
-      if (data === '[object Object]') return null;
-      try {
-        data = JSON.parse(data);
-      } catch (e) {
-        console.error("Gagal parse string JSON:", e);
-        return null;
-      }
-    }
-
-    if (data && typeof data === 'object' && !Array.isArray(data)) {
-      if (data.data) return unwrapData(data.data, targetTimestamp);
-      if (data.result) return unwrapData(data.result, targetTimestamp);
-      if (data.payload) return unwrapData(data.payload, targetTimestamp);
-    }
-
-    if (Array.isArray(data)) {
-      if (data.length === 0) return null;
-
-      if (targetTimestamp) {
-        const targetStr = String(targetTimestamp).trim();
-        const targetDigits = targetStr.replace(/[^0-9]/g, '');
-
-        const match = data.find(item => {
-          const itemTs = getFlexVal(item, 'Timestamp', 'timestamp', 'tglSekarang', 'tanggal', 'tanggalPengajuan');
-          if (!itemTs) return false;
-          
-          const itemStr = String(itemTs).trim();
-          const itemDigits = itemStr.replace(/[^0-9]/g, '');
-
-          return itemStr === targetStr || 
-                 (targetDigits.length > 5 && itemDigits.includes(targetDigits)) ||
-                 (itemDigits.length > 5 && targetDigits.includes(itemDigits));
-        });
-
-        if (match) return match;
-      }
-      return data[0];
-    }
-
-    return data;
-  }
-
   function formatTglIndo(stringTanggal) {
     if (!stringTanggal || stringTanggal === '-') return '-';
+    
     let str = stringTanggal.toString().trim();
     const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
+    // 1. Jika string sudah mengandung nama Bulan Indonesia (misal: "22 Juli 2026 08:30:00")
     for (let b of bulanIndo) {
       if (str.includes(b)) {
         let match = str.match(new RegExp(`\\d{1,2}\\s+${b}\\s+\\d{4}`));
@@ -350,11 +297,14 @@
       }
     }
 
+    // 2. Jika berbentuk Date Standard / ISO (contoh: "2026-07-22")
     let dateObj = new Date(str);
     if (!isNaN(dateObj.getTime())) {
-      return dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      const opsi = { day: 'numeric', month: 'long', year: 'numeric' };
+      return dateObj.toLocaleDateString('id-ID', opsi);
     }
 
+    // 3. Jika format tanggal berpemisah garis miring (contoh: "22/07/2026")
     if (str.includes('/')) {
       let parts = str.split(' ')[0].split('/');
       if (parts.length === 3) {
@@ -364,238 +314,133 @@
         }
       }
     }
+
     return str;
-  }
-
-  function cleanNIP(val) {
-    if (!val) return '-';
-    let str = val.toString().trim();
-    if (str.startsWith("'")) str = str.substring(1);
-    return str || '-';
-  }
-
-  // Engine Pencari Kunci Cerdas yang Diperbaiki
-  function getFlexVal(obj, ...keyPatterns) {
-    if (!obj || typeof obj !== 'object') return null;
-
-    // 1. Pengecekan Kunci Langsung
-    for (let pattern of keyPatterns) {
-      if (obj[pattern] !== undefined && obj[pattern] !== null && String(obj[pattern]).trim() !== '') {
-        return String(obj[pattern]).trim();
-      }
-    }
-
-    const keys = Object.keys(obj);
-    if (keys.length === 0) return null;
-
-    const normEntries = keys.map(k => ({
-      origKey: k,
-      normKey: k.toLowerCase().replace(/[^a-z0-9]/g, ''),
-      val: obj[k]
-    })).filter(e => e.val !== undefined && e.val !== null && String(e.val).trim() !== '');
-
-    // 2. Pencocokan Eksak setelah Normalisasi Kata Kunci
-    for (let pattern of keyPatterns) {
-      const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (!normPattern) continue;
-      const found = normEntries.find(e => e.normKey === normPattern);
-      if (found) return String(found.val).trim();
-    }
-
-    // 3. Penanganan Khusus untuk Karakter Tunggal seperti 'n' (Saldo Cuti Tahun Berjalan)
-    for (let pattern of keyPatterns) {
-      const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (normPattern === 'n') {
-        const found = normEntries.find(e => 
-          e.normKey === 'n' || 
-          e.normKey === 'n0' || 
-          e.normKey === 'sisan' || 
-          e.normKey === 'cutin' || 
-          e.normKey === 'sisacutin' || 
-          e.normKey === 'sisacuti' ||
-          e.normKey.endsWith('cutin') ||
-          e.normKey.endsWith('sisan')
-        );
-        if (found) return String(found.val).trim();
-      }
-    }
-
-    // 4. Pencocokan Parsial Dua Arah (Dukungan Fleksibilitas Struktur Header)
-    for (let pattern of keyPatterns) {
-      const normPattern = pattern.toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (!normPattern || normPattern.length < 2) continue;
-
-      const found = normEntries.find(e => {
-        if (e.normKey.includes(normPattern)) return true;
-        if (e.normKey.length >= 3 && normPattern.includes(e.normKey)) return true;
-        return false;
-      });
-      if (found) return String(found.val).trim();
-    }
-
-    return null;
-  }
-
-  async function loadDataFromAPI(nipOrId, timestamp = null) {
-    try {
-      let queryUrl = `${API_URL}?action=getData&nip=${encodeURIComponent(nipOrId)}`;
-      if (timestamp) queryUrl += `&timestamp=${encodeURIComponent(timestamp)}`;
-      
-      let response = await fetch(queryUrl);
-      if (!response.ok) throw new Error('Gagal terhubung ke API Server');
-      let result = await response.json();
-
-      // Fallback jika action=getData kosong
-      if (!result || (Array.isArray(result) && result.length === 0) || (result.data && result.data.length === 0)) {
-        const fallbackUrl = `${API_URL}?action=cari&nip=${encodeURIComponent(nipOrId)}`;
-        const resFallback = await fetch(fallbackUrl);
-        if (resFallback.ok) result = await resFallback.json();
-      }
-
-      return result;
-    } catch (error) {
-      console.error("Error API:", error);
-      return null;
-    }
-  }
-
-  function renderData(rawData, targetTimestamp = null) {
-    const data = unwrapData(rawData, targetTimestamp);
-    if (!data) {
-      alert("Data cuti tidak ditemukan atau format tidak valid!");
-      return;
-    }
-
-    // Tanggal Surat
-    let tglInput = getFlexVal(data, 'Timestamp', 'timestamp', 'tglSekarang', 'tanggal', 'tanggalPengajuan');
-    document.getElementById('tglSekarang').innerText = tglInput ? formatTglIndo(tglInput) : new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-
-    // I. Data Pegawai
-    const nama = getFlexVal(data, 'nama', 'Nama', 'namaPegawai', 'nama_pegawai') || '-';
-    const nip = cleanNIP(getFlexVal(data, 'nip', 'NIP', 'nipPegawai', 'nip_pegawai'));
-    
-    document.getElementById('disp_nama').innerText = nama;
-    document.getElementById('disp_nip').innerText = nip;
-    document.getElementById('disp_jabatan').innerText = getFlexVal(data, 'jabatan', 'Jabatan') || '-';
-    
-    let mk = getFlexVal(data, 'masaKerja', 'masakerja', 'MasaKerja', 'masa_kerja') || '-';
-    if (mk !== '-' && !mk.toString().toLowerCase().includes('tahun')) mk += ' Tahun';
-    document.getElementById('disp_masaKerja').innerText = mk;
-    document.getElementById('disp_unitKerja').innerText = getFlexVal(data, 'unitKerja', 'UnitKerja', 'unit_kerja') || 'KPU KABUPATEN KARIMUN';
-    
-    // IV. Data Cuti
-    document.getElementById('disp_alasan').innerText = getFlexVal(data, 'alasan', 'alasanCuti', 'alasan_cuti', 'Alasan') || '-';
-    document.getElementById('disp_lama').innerText = getFlexVal(data, 'lamaCuti', 'lama', 'lama_cuti', 'lamanyaCuti') || '-';
-    document.getElementById('disp_mulai').innerText = formatTglIndo(getFlexVal(data, 'mulaiTanggal', 'tglMulai', 'mulai', 'tanggalMulai'));
-    document.getElementById('disp_sampai').innerText = formatTglIndo(getFlexVal(data, 'sampaiTanggal', 'tglSelesai', 'sampai', 'tanggalSelesai'));
-    
-    // V. Saldo Cuti (Dukungan Variasi Lengkap N-2, N-1, N)
-    document.getElementById('disp_n2').innerText = getFlexVal(data, 'n2', 'n-2', 'n_2', 'sisan2', 'sisa_n2', 'sisacutin2', 'sisacuti_n2', 'cutin2', 'cuti_n2', 'sisa_cuti_n2', 'saldo_n2', 'sisa2', 'cuti2', 'cutinminus2') ?? '0';
-    document.getElementById('disp_n1').innerText = getFlexVal(data, 'n1', 'n-1', 'n_1', 'sisan1', 'sisa_n1', 'sisacutin1', 'sisacuti_n1', 'cutin1', 'cuti_n1', 'sisa_cuti_n1', 'saldo_n1', 'sisa1', 'cuti1', 'cutinminus1') ?? '0';
-    document.getElementById('disp_n').innerText  = getFlexVal(data, 'n', 'n0', 'n-0', 'n_0', 'sisan', 'sisa_n', 'sisacutin', 'sisacuti_n', 'cutin', 'cuti_n', 'sisa_cuti_n', 'saldo_n', 'sisa', 'cuti', 'cutitahunini', 'cutitahunberjalan') ?? '0';
-
-    // VI. Alamat & Pemohon
-    document.getElementById('disp_alamat').innerText = getFlexVal(data, 'alamat', 'alamatLengkap', 'alamat_lengkap') || '-';
-    document.getElementById('disp_telp').innerText = getFlexVal(data, 'telepon', 'telp', 'hp', 'noHp', 'no_hp', 'inputTelepon') || '-';
-    document.getElementById('sign_nama').innerText = nama;
-    document.getElementById('sign_nip').innerText = nip;
-
-    // VII. Atasan Langsung
-    const namaAtasan = getFlexVal(data, 'namaatasan', 'nama_atasan', 'atasan', 'atasanlangsung', 'namaatasanlangsung', 'nama_atasan_langsung', 'inputnamaatasan', 'input_nama_atasan', 'penilai', 'namapenilai', 'nama_penilai') || '-';
-    const nipAtasan = cleanNIP(getFlexVal(data, 'nipatasan', 'nip_atasan', 'nipatasanlangsung', 'nip_atasan_langsung', 'inputnipatasan', 'input_nip_atasan', 'nippenilai', 'nip_penilai'));
-    const jabatanAtasan = getFlexVal(data, 'jabatanatasan', 'jabatan_atasan', 'jabatanatasanlangsung', 'jabatan_atasan_langsung', 'inputjabatanatasan', 'input_jabatan_atasan', 'jabatanpenilai', 'jabatan_penilai') || 'Plt. Kasubbag Keuangan Hukum dan SDM';
-
-    document.getElementById('disp_namaAtasan').innerText = namaAtasan;
-    document.getElementById('disp_nipAtasan').innerText = nipAtasan;
-    document.getElementById('disp_jabatanAtasan').innerText = jabatanAtasan;
-    document.getElementById('disp_catatanAtasan').innerText = getFlexVal(data, 'catatanAtasan', 'catatan_atasan', 'catatanAtasanLangsung') || '';
-
-    // Status Pertimbangan Atasan
-    ['check_atasan_setuju', 'check_atasan_perubahan', 'check_atasan_ditangguhkan', 'check_atasan_tidak_setuju'].forEach(id => {
-      document.getElementById(id).innerText = '';
-    });
-    const statusAtasan = (getFlexVal(data, 'statusAtasan', 'status_atasan', 'pertimbanganAtasan', 'pertimbangan_atasan', 'catatanAtasan') || '').toLowerCase();
-    if (statusAtasan.includes('setuju') && !statusAtasan.includes('tidak')) document.getElementById('check_atasan_setuju').innerText = '✔';
-    else if (statusAtasan.includes('ubah') || statusAtasan.includes('rubah')) document.getElementById('check_atasan_perubahan').innerText = '✔';
-    else if (statusAtasan.includes('tangguh')) document.getElementById('check_atasan_ditangguhkan').innerText = '✔';
-    else if (statusAtasan.includes('tidak')) document.getElementById('check_atasan_tidak_setuju').innerText = '✔';
-
-    // VIII. Pejabat Berwenang
-    const namaPejabat = getFlexVal(data, 'namapejabat', 'nama_pejabat', 'pejabat', 'pejabatberwenang', 'pejabatyangberwenang', 'namapejabatberwenang', 'nama_pejabat_berwenang', 'inputnamapejabat', 'input_nama_pejabat', 'yangberwenang', 'namayangberwenang', 'sekretaris', 'namasekretaris') || '-';
-    const nipPejabat = cleanNIP(getFlexVal(data, 'nippejabat', 'nip_pejabat', 'nippejabatberwenang', 'nip_pejabat_berwenang', 'inputnippejabat', 'input_nip_pejabat', 'nipyangberwenang', 'nipsekretaris'));
-    const jabatanPejabat = getFlexVal(data, 'jabatanpejabat', 'jabatan_pejabat', 'jabatanpejabatberwenang', 'jabatan_pejabat_berwenang', 'inputjabatanpejabat', 'input_jabatan_pejabat', 'jabatanyangberwenang', 'jabatansekretaris') || 'Pejabat Berwenang,';
-
-    document.getElementById('disp_namaPejabat').innerText = namaPejabat;
-    document.getElementById('disp_nipPejabat').innerText = nipPejabat;
-    document.getElementById('disp_jabatanPejabat').innerText = jabatanPejabat;
-    document.getElementById('disp_catatanPejabat').innerText = getFlexVal(data, 'catatanPejabat', 'catatan_pejabat', 'catatanPejabatBerwenang') || '';
-
-    // Status Keputusan Pejabat
-    ['check_pejabat_setuju', 'check_pejabat_perubahan', 'check_pejabat_ditangguhkan', 'check_pejabat_tidak_setuju'].forEach(id => {
-      document.getElementById(id).innerText = '';
-    });
-    const statusPejabat = (getFlexVal(data, 'statusPejabat', 'status_pejabat', 'keputusanPejabat', 'keputusan_pejabat', 'status') || '').toLowerCase();
-    if (statusPejabat.includes('setuju') && !statusPejabat.includes('tidak')) document.getElementById('check_pejabat_setuju').innerText = '✔';
-    else if (statusPejabat.includes('ubah') || statusPejabat.includes('rubah')) document.getElementById('check_pejabat_perubahan').innerText = '✔';
-    else if (statusPejabat.includes('tangguh')) document.getElementById('check_pejabat_ditangguhkan').innerText = '✔';
-    else if (statusPejabat.includes('tidak')) document.getElementById('check_pejabat_tidak_setuju').innerText = '✔';
-
-    // II. Jenis Cuti Checkbox
-    ['check_tahunan', 'check_besar', 'check_sakit', 'check_melahirkan', 'check_penting', 'check_luar'].forEach(id => {
-      document.getElementById(id).innerText = '';
-    });
-    const jenis = (getFlexVal(data, 'jenisCuti', 'jenis_cuti', 'jenis') || '').toLowerCase();
-    if (jenis.includes("tahunan")) document.getElementById("check_tahunan").innerText = "☑";
-    else if (jenis.includes("besar")) document.getElementById("check_besar").innerText = "☑";
-    else if (jenis.includes("sakit")) document.getElementById("check_sakit").innerText = "☑";
-    else if (jenis.includes("melahirkan")) document.getElementById("check_melahirkan").innerText = "☑";
-    else if (jenis.includes("penting")) document.getElementById("check_penting").innerText = "☑";
-    else if (jenis.includes("luar") || jenis.includes("tanggungan")) document.getElementById("check_luar").innerText = "☑";
   }
 
   function downloadPDF() {
     const element = document.getElementById('areaCetak');
     const namaPegawai = document.getElementById('disp_nama').innerText || 'Pegawai';
+    
     const options = {
-      margin: 0,
-      filename: `Surat_Cuti_${namaPegawai}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0 },
-      jsPDF: { unit: 'cm', format: [21.5, 33], orientation: 'portrait' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      margin:       0,
+      filename:     `Surat_Cuti_${namaPegawai}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+      jsPDF:        { unit: 'cm', format: [21.5, 33], orientation: 'portrait' },
+      pagebreak:    { mode: 'avoid-all' }
     };
+
     html2pdf().set(options).from(element).save();
   }
 
-  document.addEventListener('DOMContentLoaded', async function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const nipParam = urlParams.get('nip') || urlParams.get('id');
-    const timestampParam = urlParams.get('timestamp') || urlParams.get('tgl');
-
-    let rawData = null;
-
-    // Prioritas 1: Ambil dari LocalStorage/SessionStorage
-    const stored = localStorage.getItem('previewCutiData') || sessionStorage.getItem('lastCutiData');
-    if (stored) {
-      try {
-        rawData = JSON.parse(stored);
-      } catch (e) {
-        console.error("Gagal membaca storage:", e);
-      }
-    }
-
-    // Prioritas 2: Fetch dari API jika storage kosong & ada parameter NIP
-    if (!rawData && nipParam) {
-      rawData = await loadDataFromAPI(nipParam, timestampParam);
-    }
-
-    if (!rawData) {
-      alert("Data cuti tidak ditemukan! Silakan lakukan pencarian atau pilih riwayat kembali.");
+  document.addEventListener('DOMContentLoaded', function() {
+    let dataRaw = localStorage.getItem('previewCutiData') || sessionStorage.getItem('lastCutiData');
+    
+    if (!dataRaw) {
+      alert("Data cuti tidak ditemukan di sistem browser! Anda akan diarahkan kembali ke halaman pencarian.");
       window.location.href = "index.html";
       return;
     }
 
-    renderData(rawData, timestampParam);
+    const data = JSON.parse(dataRaw);
+
+    // LOGIKA TANGGAL DARI TIMESTAMP SPREADSHEET
+    let tglInput = data.Timestamp || data.timestamp || data.tglSekarang;
+
+    if (tglInput) {
+      document.getElementById('tglSekarang').innerText = formatTglIndo(tglInput);
+    } else {
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('tglSekarang').innerText = new Date().toLocaleDateString('id-ID', options);
+    }
+
+    // I. Data Pegawai
+    document.getElementById('disp_nama').innerText = data.nama || '-';
+    document.getElementById('disp_nip').innerText = data.nip || '-';
+    document.getElementById('disp_jabatan').innerText = data.jabatan || '-';
+    document.getElementById('disp_masaKerja').innerText = (data.masaKerja || '-') + ' Tahun';
+    document.getElementById('disp_unitKerja').innerText = data.unitKerja || 'KPU KABUPATEN KARIMUN';
+    
+    // IV. Data Cuti
+    document.getElementById('disp_alasan').innerText = data.alasan || '-';
+    document.getElementById('disp_lama').innerText = data.lamaCuti || data.lama || '-';
+    document.getElementById('disp_mulai').innerText = formatTglIndo(data.mulaiTanggal || data.tglMulai);
+    document.getElementById('disp_sampai').innerText = formatTglIndo(data.sampaiTanggal || data.tglSelesai);
+    
+    // V. Saldo Cuti (Menampilkan Saldo Awal Sebelum Dipotong Cuti yang Diajukan)
+    let rawN2 = parseInt(data.n2_saldo) || 0;
+    let rawN1 = parseInt(data.n1_saldo) || 0;
+    let rawN  = parseInt(data.n_saldo)  || 0;
+
+    // Ekstrak angka dari lama cuti (misal "3 Hari" -> 3)
+    let valLama = (data.lamaCuti || data.lama || "0").toString();
+    let lamaHari = parseInt(valLama.replace(/\D/g, '')) || 0;
+
+    // Hanya proses jika jenis cuti yang diambil adalah "Cuti Tahunan"
+    if (data.jenisCuti === "Cuti Tahunan" && lamaHari > 0) {
+      let sisaLama = lamaHari;
+
+      // 1. Kembalikan ke N terlebih dahulu (Maksimal 12 hari)
+      const maxN = 12;
+      const butuhN = maxN - rawN;
+      if (butuhN > 0) {
+        let tambahN = Math.min(sisaLama, butuhN);
+        rawN += tambahN;
+        sisaLama -= tambahN;
+      }
+
+      // 2. Jika masih ada sisa hari, kembalikan ke N-1 (Maksimal 6 hari)
+      if (sisaLama > 0) {
+        const maxN1 = 6;
+        const butuhN1 = maxN1 - rawN1;
+        if (butuhN1 > 0) {
+          let tambahN1 = Math.min(sisaLama, butuhN1);
+          rawN1 += tambahN1;
+          sisaLama -= tambahN1;
+        }
+      }
+
+      // 3. Jika masih ada sisa hari, sisanya dikembalikan ke N-2
+      if (sisaLama > 0) {
+        rawN2 += sisaLama;
+      }
+    }
+
+    // Tampilkan nilai saldo awal (sebelum dipotong) ke tabel formulir
+    document.getElementById('disp_n2').innerText = rawN2;
+    document.getElementById('disp_n1').innerText = rawN1;
+    document.getElementById('disp_n').innerText  = rawN;
+
+    // VI. Data Alamat & Tanda Tangan Pemohon
+    document.getElementById('disp_alamat').innerText = data.alamat || '-';
+    document.getElementById('disp_telp').innerText = data.telepon || data.telp || '-';
+    document.getElementById('sign_nama').innerText = data.nama || '-';
+    document.getElementById('sign_nip').innerText = data.nip || '-';
+
+    // VII & VIII. Data Atasan Langsung & Pejabat Berwenang
+    document.getElementById('disp_jabatanAtasan').innerText = data.jabatanAtasan || 'Plt. Kasubbag Keuangan Hukum dan SDM';
+    document.getElementById('disp_namaAtasan').innerText = data.namaAtasan || '-';
+    document.getElementById('disp_nipAtasan').innerText = data.nipAtasan || '-';
+
+    document.getElementById('disp_jabatanPejabat').innerText = data.jabatanPejabat || 'Pejabat Berwenang,';
+    document.getElementById('disp_namaPejabat').innerText = data.namaPejabat || '-';
+    document.getElementById('disp_nipPejabat').innerText = data.nipPejabat || '-';
+
+    // II. Logika Centang Jenis Cuti
+    const jenis = data.jenisCuti;
+    const checks = {
+      "Cuti Tahunan": "check_tahunan",
+      "Cuti Besar": "check_besar",
+      "Cuti Sakit": "check_sakit",
+      "Cuti Melahirkan": "check_melahirkan",
+      "Cuti Karena Alasan Penting": "check_penting",
+      "Cuti di Luar Tanggungan Negara": "check_luar"
+    };
+
+    if (checks[jenis] && document.getElementById(checks[jenis])) {
+      document.getElementById(checks[jenis]).innerText = "☑";
+    }
   });
 </script>
 </body>
