@@ -1,147 +1,104 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <base target="_top">
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Manajemen Saldo Cuti Pegawai</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview Saldo Cuti Pegawai</title>
   
-  <!-- Mencegah error favicon 404 -->
-  <link rel="icon" href="data:,">
-
-  <!-- Bootstrap 5 & Bootstrap Icons -->
+  <!-- BOOTSTRAP 5 CSS & ICONS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
   <style>
-    :root {
-      --bs-body-bg: #f4f6f9;
-    }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      padding-bottom: 40px;
-    }
-    .card-custom {
-      border-radius: 12px;
-      border: none;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    }
-    .stat-card {
-      border-left: 4px solid #0d6efd;
-      transition: transform 0.2s ease-in-out;
-    }
-    .stat-card:hover {
-      transform: translateY(-3px);
-    }
-    .table-hover tbody tr:hover {
-      background-color: #f1f5f9;
-    }
-    .badge-saldo {
-      font-size: 0.85rem;
-      padding: 0.4em 0.75em;
-    }
-    .toast-container {
-      z-index: 1090;
-    }
-    /* Mencegah konflik z-index pada stacked modal */
-    #modalUploadACC {
-      background: rgba(0, 0, 0, 0.4);
-    }
+    body { background-color: #f8f9fa; }
+    .badge-saldo { font-size: 0.9rem; }
+    .table-v-middle td, .table-v-middle th { vertical-align: middle; }
   </style>
 </head>
 <body>
 
-  <!-- TOAST NOTIFICATION CONTAINER -->
-  <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+<div class="container py-4">
+  <!-- ALERT CONTAINER FOR ROLLOVER -->
+  <div id="alertRolloverContainer"></div>
 
-  <div class="container py-4">
-    
-    <!-- CONTAINER ALERT PENGINGAT ROLLOVER -->
-    <div id="alertRolloverContainer"></div>
+  <!-- CONTAINER UNTUK TOAST NOTIFICATION -->
+  <div id="toastContainer" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;"></div>
 
-    <!-- HEADER & ACTION BUTTONS -->
-    <div class="card card-custom p-4 mb-4">
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-        <div>
-          <h4 class="m-0 text-primary fw-bold">
-            <i class="bi bi-wallet2 me-2"></i>Manajemen Saldo Cuti Pegawai
-          </h4>
-          <small class="text-muted">Kelola jatah cuti tahunan (N-2, N-1, N) dan riwayat pengajuan pegawai.</small>
-        </div>
-        <div class="d-flex flex-wrap gap-2">
-          <button class="btn btn-outline-secondary" onclick="loadData()" title="Refresh Data">
-            <i class="bi bi-arrow-clockwise"></i> Refresh
-          </button>
-          <button class="btn btn-warning text-white" id="btnRollover" onclick="jalankanRolloverTahunBaru()">
-            <i class="bi bi-lock-fill me-1"></i> Rollover Tahun Baru
-          </button>
-          <button class="btn btn-primary" onclick="bukaModalTambah()">
-            <i class="bi bi-plus-lg me-1"></i> Tambah Saldo
-          </button>
-        </div>
-      </div>
+  <!-- HEADER & DASHBOARD STATS -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-0 text-dark"><i class="bi bi-person-vcard me-2"></i>Data Saldo Cuti Pegawai</h3>
+      <span class="text-muted small">Kelola saldo cuti, riwayat pengajuan, dan lampiran berkas</span>
+    </div>
+    <div>
+      <button class="btn btn-primary btn-sm me-2" onclick="bukaModalTambah()">
+        <i class="bi bi-plus-circle me-1"></i> Tambah Saldo
+      </button>
+      <button class="btn btn-warning btn-sm text-white" id="btnRollover" onclick="jalankanRolloverTahunBaru()">
+        <i class="bi bi-lock-fill me-1"></i> Rollover Tahun Baru
+      </button>
+    </div>
+  </div>
 
-      <!-- CARDS RINGKASAN STATISTIK -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-4">
-          <div class="card card-custom p-3 stat-card border-start border-primary">
-            <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <span class="text-muted small fw-semibold">Total Pegawai</span>
-                <h3 class="mb-0 fw-bold text-dark" id="statTotalPegawai">0</h3>
-              </div>
-              <div class="fs-1 text-primary"><i class="bi bi-people"></i></div>
-            </div>
+  <!-- RINGKASAN STATISTIK -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm bg-white">
+        <div class="card-body d-flex align-items-center">
+          <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3 text-primary">
+            <i class="bi bi-people fs-3"></i>
           </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card card-custom p-3 stat-card border-start border-success">
-            <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <span class="text-muted small fw-semibold">Total Saldo Tersedia</span>
-                <h3 class="mb-0 fw-bold text-success" id="statTotalSaldo">0 Hari</h3>
-              </div>
-              <div class="fs-1 text-success"><i class="bi bi-calendar-check"></i></div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card card-custom p-3 stat-card border-start border-info">
-            <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <span class="text-muted small fw-semibold">Tahun Saldo Aktif</span>
-                <h3 class="mb-0 fw-bold text-info" id="statTahunAktif">-</h3>
-              </div>
-              <div class="fs-1 text-info"><i class="bi bi-calendar3"></i></div>
-            </div>
+          <div>
+            <div class="text-muted small">Total Pegawai</div>
+            <h4 class="fw-bold mb-0" id="statTotalPegawai">0</h4>
           </div>
         </div>
       </div>
-
-      <!-- FILTER PENCARIAN -->
-      <div class="row mb-3">
-        <div class="col-md-5 col-lg-4">
-          <div class="input-group">
-            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-            <input type="text" id="filterInput" class="form-control border-start-0 ps-0" placeholder="Cari NIP atau Nama Pegawai..." onkeyup="filterTable()">
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm bg-white">
+        <div class="card-body d-flex align-items-center">
+          <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3 text-success">
+            <i class="bi bi-calendar-check fs-3"></i>
+          </div>
+          <div>
+            <div class="text-muted small">Total Akumulasi Saldo</div>
+            <h4 class="fw-bold mb-0" id="statTotalSaldo">0 Hari</h4>
           </div>
         </div>
       </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm bg-white">
+        <div class="card-body d-flex align-items-center">
+          <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3 text-info">
+            <i class="bi bi-calendar3 fs-3"></i>
+          </div>
+          <div>
+            <div class="text-muted small">Tahun Aktif Data</div>
+            <h4 class="fw-bold mb-0" id="statTahunAktif">-</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      <!-- TABEL SALDO CUTI -->
+  <!-- TABEL SALDO UTAMA -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-bordered table-hover align-middle" id="tabelSaldo">
+        <table class="table table-hover table-v-middle mb-0">
           <thead class="table-light">
             <tr>
               <th width="4%" class="text-center">No</th>
               <th width="15%">NIP</th>
               <th>Nama Pegawai</th>
-              <th class="text-center" width="8%">N-2</th>
-              <th class="text-center" width="8%">N-1</th>
-              <th class="text-center" width="10%">N (Berjalan)</th>
-              <th class="text-center" width="12%">Total Saldo</th>
-              <th class="text-center" width="8%">Tahun</th>
-              <th class="text-center" width="22%">Aksi</th>
+              <th width="8%" class="text-center">N-2</th>
+              <th width="8%" class="text-center">N-1</th>
+              <th width="8%" class="text-center">N</th>
+              <th width="12%" class="text-center">Total Saldo</th>
+              <th width="8%" class="text-center">Tahun</th>
+              <th width="20%" class="text-center">Aksi</th>
             </tr>
           </thead>
           <tbody id="saldoTableBody">
@@ -156,186 +113,217 @@
       </div>
     </div>
   </div>
+</div>
 
-  <!-- MODAL FORM INPUT / EDIT SALDO -->
-  <div class="modal fade" id="modalSaldo" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title fw-bold" id="modalTitle"><i class="bi bi-pencil-square me-2"></i>Tambah Saldo Cuti</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <form id="formSaldo" onsubmit="simpanSaldo(event)">
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label fw-bold">NIP</label>
-              <input type="text" id="modalNip" class="form-control" required placeholder="Masukkan NIP Pegawai">
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Nama Pegawai</label>
-              <input type="text" id="modalNama" class="form-control" required placeholder="Masukkan Nama Lengkap">
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-4">
-                <label class="form-label fw-bold">N-2 (Hari)</label>
-                <input type="number" id="modalN2" class="form-control" value="0" min="0" required>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-bold">N-1 (Hari)</label>
-                <input type="number" id="modalN1" class="form-control" value="0" min="0" required>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-bold">N (Hari)</label>
-                <input type="number" id="modalN" class="form-control" value="12" min="0" required>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Tahun Saldo</label>
-              <input type="number" id="modalTahun" class="form-control" required>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-primary" id="btnSimpan">
-              <i class="bi bi-save me-1"></i> Simpan
-            </button>
-          </div>
-        </form>
+<!-- MODAL TAMBAH/EDIT SALDO UTAMA -->
+<div class="modal fade" id="modalSaldo" tabindex="-1" aria-hidden="true" style="z-index: 1055;">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold" id="modalTitle"><i class="bi bi-pencil-square me-2"></i>Kelola Saldo Cuti</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-    </div>
-  </div>
-
-  <!-- MODAL RIWAYAT CUTI PEGAWAI & KELOLA SALDO SNAPSHOT MANUAL -->
-  <div class="modal fade" id="modalRiwayat" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header bg-info text-white">
-          <h5 class="modal-title fw-bold">
-            <i class="bi bi-clock-history me-2"></i>Rekapitulasi Riwayat Cuti & Saldo: <span id="riwayatNamaPegawai"></span>
-          </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
+      <form id="formSaldo" onsubmit="simpanSaldo(event)">
         <div class="modal-body">
-          
-         <!-- FORM INPUT RIWAYAT SALDO SNAPSHOT MANUAL -->
-<div class="card border-info mb-4">
-  <div class="card-header bg-info bg-opacity-10 text-dark fw-bold">
-    <i class="bi bi-plus-circle me-1"></i> Input Koreksi / Saldo Snapshot Manual
-  </div>
-  <div class="card-body">
-    <form id="formRiwayatSaldoManual" onsubmit="simpanRiwayatSaldoManual(event)">
-      
-      <!-- DROPDOWN PILIH TANGGAL / BARIS PENGAJUAN -->
-      <div class="mb-3">
-        <label for="selectTanggalPengajuan" class="form-label small fw-bold text-primary">
-          <i class="bi bi-calendar-event me-1"></i> Pilih Tanggal Pengajuan
-        </label>
-        <select id="selectTanggalPengajuan" class="form-select form-select-sm" required>
-          <option value="" selected disabled>-- Pilih Tanggal Pengajuan --</option>
-          <!-- Option diisi secara dinamis melalui JavaScript (misal: saat bukaModalRiwayat) -->
-        </select>
-        <div class="form-text text-muted" style="font-size: 0.75rem;">
-          Pilih pengajuan cuti yang akan diperbarui nilai snapshot saldonya.
+          <div class="mb-3">
+            <label class="form-label fw-semibold">NIP Pegawai</label>
+            <input type="text" class="form-control" id="modalNip" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nama Pegawai</label>
+            <input type="text" class="form-control" id="modalNama" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-4">
+              <label class="form-label fw-semibold">Saldo N-2</label>
+              <input type="number" class="form-control" id="modalN2" min="0" value="0" required>
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold">Saldo N-1</label>
+              <input type="number" class="form-control" id="modalN1" min="0" value="0" required>
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold">Saldo N</label>
+              <input type="number" class="form-control" id="modalN" min="0" value="12" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tahun</label>
+            <input type="number" class="form-control" id="modalTahun" required>
+          </div>
         </div>
-      </div>
-
-      <div class="row g-2 align-items-end">
-        <div class="col-md-2">
-          <label class="form-label small fw-bold">N-2 (Hari)</label>
-          <input type="number" id="manualN2" class="form-control form-control-sm" value="0" min="0" required>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-bold">N-1 (Hari)</label>
-          <input type="number" id="manualN1" class="form-control form-control-sm" value="0" min="0" required>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-bold">N (Hari)</label>
-          <input type="number" id="manualN" class="form-control form-control-sm" value="12" min="0" required>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small fw-bold">Tahun Snapshot</label>
-          <input type="number" id="manualTahun" class="form-control form-control-sm" required>
-        </div>
-        <div class="col-md-3">
-          <button type="submit" class="btn btn-sm btn-info text-white w-100" id="btnSimpanManualSaldo">
-            <i class="bi bi-save me-1"></i> Simpan Saldo Snapshot
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-primary btn-sm" id="btnSimpan">
+            <i class="bi bi-save me-1"></i> Simpan
           </button>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
 </div>
 
-          <!-- TABEL REKAPITULASI RIWAYAT PENGAJUAN CUTI & SALDO SNAPSHOT PER PENGAJUAN -->
-          <h6 class="fw-bold text-primary mb-2"><i class="bi bi-file-earmark-text me-1"></i> Log Pengajuan Cuti & Rincian Saldo Saat Pengajuan</h6>
-          <p class="text-muted small mb-2">Daftar historis jenis cuti beserta snapshot kondisi saldo pegawai sesuai tahun dan tanggal pengajuan.</p>
-          <div class="table-responsive">
-            <table class="table table-bordered table-striped align-middle">
-              <thead class="table-dark text-center align-middle">
-                <tr>
-                  <th width="3%">No</th>
-                  <th width="11%">Tanggal Pengajuan</th>
-                  <th width="10%">Jenis Cuti</th>
-                  <th width="6%">Lama</th>
-                  <th width="12%">Mulai s.d. Selesai</th>
-                  <th>Alasan & Alamat</th>
-                  <th width="9%">Lampiran</th>
-                  <th width="16%" class="bg-primary bg-opacity-75">Snapshot Saldo Cuti<br><small class="fw-normal">(N-2 | N-1 | N = Total)</small></th>
-                  <th width="13%">Form Disetujui (ACC)</th>
-                </tr>
-              </thead>
-              <tbody id="riwayatTableBody">
-                <tr>
-                  <td colspan="9" class="text-center py-4">Memuat riwayat...</td>
-                </tr>
-              </tbody>
-            </table>
+<!-- MODAL RIWAYAT CUTI & SALDO SNAPSHOT -->
+<div class="modal fade" id="modalRiwayat" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title fw-bold">
+          <i class="bi bi-clock-history me-2"></i>Riwayat Cuti & Snapshot Saldo: <span id="riwayatNamaPegawai" class="fw-normal"></span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- FORM SNAPSHOT SALDO MANUAL PER PENGAJUAN -->
+        <div class="card mb-4 border-info">
+          <div class="card-header bg-info bg-opacity-10 fw-bold text-dark">
+            <i class="bi bi-pencil-square me-1"></i> Update Snapshot Saldo Manual per Pengajuan
           </div>
+          <div class="card-body">
+            <form id="formRiwayatSaldoManual" onsubmit="simpanRiwayatSaldoManual(event)">
+              <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                  <label class="form-label small fw-bold">Pilih Tanggal Pengajuan Cuti</label>
+                  <select class="form-select form-select-sm" id="selectTanggalPengajuan" required>
+                    <option value="" selected disabled>-- Pilih Tanggal Pengajuan --</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-bold">Saldo N-2</label>
+                  <input type="number" class="form-control form-control-sm" id="manualN2" min="0" value="0" required>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-bold">Saldo N-1</label>
+                  <input type="number" class="form-control form-control-sm" id="manualN1" min="0" value="0" required>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-bold">Saldo N</label>
+                  <input type="number" class="form-control form-control-sm" id="manualN" min="0" value="0" required>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-bold">Tahun Saldo</label>
+                  <input type="number" class="form-control form-control-sm" id="manualTahun" required>
+                </div>
+                <div class="col-12 text-end">
+                  <button type="submit" class="btn btn-sm btn-info text-white" id="btnSimpanManualSaldo">
+                    <i class="bi bi-save me-1"></i> Simpan Saldo Snapshot
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
 
+        <!-- TABEL REKAPITULASI RIWAYAT CUTI -->
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped align-middle">
+            <thead class="table-dark text-center align-middle">
+              <tr>
+                <th width="3%">No</th>
+                <th width="11%">Tanggal Pengajuan</th>
+                <th width="10%">Jenis Cuti</th>
+                <th width="6%">Lama</th>
+                <th width="12%">Mulai s.d. Selesai</th>
+                <th>Alasan & Alamat</th>
+                <th width="10%">Lampiran</th>
+                <th width="16%" class="bg-primary bg-opacity-75">Snapshot Saldo Cuti<br><small class="fw-normal">(N-2 | N-1 | N = Total)</small></th>
+                <th width="13%">Form Disetujui (ACC)</th>
+              </tr>
+            </thead>
+            <tbody id="riwayatTableBody">
+              <tr>
+                <td colspan="9" class="text-center py-4">Memuat riwayat...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- KONTROL PAGINATION RIWAYAT -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="text-muted small" id="riwayatPageInfo">Halaman 1 dari 1 (Total 0 data)</div>
+          <nav aria-label="Navigasi Riwayat">
+            <ul class="pagination pagination-sm mb-0" id="riwayatPagination">
+              <!-- Tombol Prev/Next diisi secara dinamis -->
+            </ul>
+          </nav>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL UPLOAD FORM ACC -->
+<div class="modal fade" id="modalUploadACC" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title fw-bold"><i class="bi bi-cloud-upload me-2"></i>Upload Form ACC Disetujui</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="formUploadACC" onsubmit="handleProcessUploadACC(event)">
+        <div class="modal-body">
+          <input type="hidden" id="uploadRowIndex">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Pilih Berkas ACC (PDF / Gambar, Maks. 10 MB)</label>
+            <input type="file" class="form-control" id="fileACC" accept=".pdf,image/*" required>
+            <div class="form-text text-muted">
+              *Foto/Gambar dari HP akan otomatis dikompres sebelum dikirim.
+            </div>
+          </div>
+          <div id="uploadStatusAlert" class="alert d-none py-2 small" role="alert"></div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-success btn-sm" id="btnSubmitUploadACC">
+            <i class="bi bi-upload me-1"></i> Mulai Upload
+          </button>
         </div>
-      </div>
+      </form>
     </div>
   </div>
+</div>
 
-  <!-- MODAL UPLOAD FORM CUTI DISETUJUI (ACC) -->
-  <div class="modal fade" id="modalUploadACC" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header bg-success text-white">
-          <h5 class="modal-title fw-bold"><i class="bi bi-cloud-upload me-2"></i>Upload Form Cuti Disetujui</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <form id="formUploadACC" onsubmit="handleProcessUploadACC(event)">
-          <div class="modal-body">
-            <input type="hidden" id="uploadRowIndex">
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Pilih Berkas Disetujui (PDF / Gambar, Maks. 10 MB)</label>
-              <input type="file" class="form-control" id="fileACC" accept=".pdf,image/*" required>
-              <div class="form-text text-muted">
-                *Foto/Gambar dari HP akan otomatis dikompres sebelum dikirim.
-              </div>
+<!-- MODAL UPLOAD LAMPIRAN BERKAS (SAKIT/PENDUKUNG) -->
+<div class="modal fade" id="modalUploadLampiran" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold"><i class="bi bi-paperclip me-2"></i>Upload Lampiran Berkas</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="formUploadLampiran" onsubmit="handleProcessUploadLampiran(event)">
+        <div class="modal-body">
+          <input type="hidden" id="uploadLampiranRowIndex">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Pilih Berkas Lampiran (PDF / Gambar, Maks. 10 MB)</label>
+            <input type="file" class="form-control" id="fileLampiran" accept=".pdf,image/*" required>
+            <div class="form-text text-muted">
+              *Foto/Gambar dari HP akan otomatis dikompres sebelum dikirim.
             </div>
-            <div id="uploadStatusAlert" class="alert d-none py-2 small" role="alert"></div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-success btn-sm" id="btnSubmitUploadACC">
-              <i class="bi bi-upload me-1"></i> Mulai Upload
-            </button>
-          </div>
-        </form>
-      </div>
+          <div id="uploadLampiranStatusAlert" class="alert d-none py-2 small" role="alert"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-primary btn-sm" id="btnSubmitUploadLampiran">
+            <i class="bi bi-upload me-1"></i> Mulai Upload Lampiran
+          </button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- SCRIPT LIBRARIES -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-  <script>
- const API_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
 const FOLDER_ID = '1eNgD7YvDMqpPtFMGmn2RIKmITduM9RK5';
 
 // TOKEN PENGAMAN ROLLOVER
@@ -345,10 +333,15 @@ let rawDataSaldo = [];
 let modalInstance = null;
 let modalRiwayatInstance = null;
 let modalUploadACCInstance = null;
+let modalUploadLampiranInstance = null; // Variable Instance Modal Upload Lampiran
 
 let activeRiwayatNip = '';
 let activeRiwayatNama = '';
 window.activeRiwayatData = []; // Cache global untuk data riwayat pegawai aktif
+
+// State Pagination Riwayat
+let currentPageRiwayat = 1;
+const itemsPerPageRiwayat = 5;
 
 // UTILITY: Sanitisasi String HTML
 function escapeHtml(str) {
@@ -432,6 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
   modalInstance = new bootstrap.Modal(document.getElementById('modalSaldo'));
   modalRiwayatInstance = new bootstrap.Modal(document.getElementById('modalRiwayat'));
   modalUploadACCInstance = new bootstrap.Modal(document.getElementById('modalUploadACC'));
+  modalUploadLampiranInstance = new bootstrap.Modal(document.getElementById('modalUploadLampiran')); // Inisialisasi Modal Lampiran
 
   if (document.getElementById('modalTahun')) document.getElementById('modalTahun').value = new Date().getFullYear();
   if (document.getElementById('manualTahun')) document.getElementById('manualTahun').value = new Date().getFullYear();
@@ -673,11 +667,52 @@ async function jalankanRolloverTahunBaru() {
   }
 }
 
-// BUKA MODAL RIWAYAT CUTI & SALDO SNAPSHOT PER RIWAYAT
+// ==========================================
+// HELPER: PARSER TANGGAL INDONESIA
+// ==========================================
+function parseTanggalIndo(str) {
+  if (!str) return 0;
+  
+  if (typeof str === 'number') return str;
+  if (!isNaN(Date.parse(str))) return new Date(str).getTime();
+
+  const bulanMap = {
+    'januari': 0, 'jan': 0,
+    'februari': 1, 'feb': 1,
+    'maret': 2, 'mar': 2,
+    'april': 3, 'apr': 3,
+    'mei': 4,
+    'juni': 5, 'jun': 5,
+    'juli': 6, 'jul': 6,
+    'agustus': 7, 'agu': 7, 'ags': 7,
+    'september': 8, 'sep': 8,
+    'oktober': 9, 'okt': 9,
+    'november': 10, 'nov': 10,
+    'desember': 11, 'des': 11
+  };
+
+  const parts = String(str).trim().toLowerCase().split(/\s+/);
+  if (parts.length >= 3) {
+    const tgl = parseInt(parts[0], 10);
+    const bln = bulanMap[parts[1]];
+    const thn = parseInt(parts[2], 10);
+    if (!isNaN(tgl) && bln !== undefined && !isNaN(thn)) {
+      return new Date(thn, bln, tgl).getTime();
+    }
+  }
+
+  return 0;
+}
+
+
+// ==========================================
+// FUNGSI UTAMA RIWAYAT CUTI
+// ==========================================
 async function bukaModalRiwayat(nip, nama) {
   activeRiwayatNip = nip;
   activeRiwayatNama = nama;
-  window.activeRiwayatData = []; // Reset data cache
+  window.activeRiwayatData = [];
+  currentPageRiwayat = 1;
 
   document.getElementById('riwayatNamaPegawai').innerText = `${nama} (NIP: ${nip})`;
   
@@ -685,7 +720,6 @@ async function bukaModalRiwayat(nip, nama) {
   tbodyRiwayat.innerHTML = `<tr><td colspan="9" class="text-center py-4"><i><div class="spinner-border spinner-border-sm text-info me-2"></div>Memuat rekapitulasi riwayat cuti dan snapshot saldo...</i></td></tr>`;
   
   populateSelectTanggalPengajuan([]);
-
   modalRiwayatInstance.show();
 
   try {
@@ -695,75 +729,21 @@ async function bukaModalRiwayat(nip, nama) {
     if (!res.success || !res.data || !res.data.length) {
       tbodyRiwayat.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">Belum ada catatan riwayat cuti untuk pegawai ini.</td></tr>`;
       populateSelectTanggalPengajuan([]);
+      if (document.getElementById('riwayatPageInfo')) document.getElementById('riwayatPageInfo').innerText = "Halaman 0 dari 0 (Total 0 data)";
+      if (document.getElementById('riwayatPagination')) document.getElementById('riwayatPagination').innerHTML = "";
       return;
     }
 
-    // SIMPAN DATA KE CACHE GLOBAL
-    window.activeRiwayatData = res.data;
-
-    // POPULATE DROPDOWN
-    populateSelectTanggalPengajuan(res.data);
-
-    tbodyRiwayat.innerHTML = '';
-    res.data.forEach((r, idx) => {
-      let linkFile = '-';
-      if (r.fileSakit && String(r.fileSakit).startsWith('http')) {
-        linkFile = `<a href="${escapeHtml(r.fileSakit)}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-earmark-pdf"></i> File</a>`;
-      } else if (r.fileSakit && r.fileSakit !== '-') {
-        linkFile = `<small class="text-muted">${escapeHtml(r.fileSakit)}</small>`;
-      }
-
-      let n2 = parseInt(r.n2_saldo !== undefined ? r.n2_saldo : r.n2) || 0;
-      let n1 = parseInt(r.n1_saldo !== undefined ? r.n1_saldo : r.n1) || 0;
-      let n  = parseInt(r.n_saldo  !== undefined ? r.n_saldo  : r.n)  || 0;
-      let totalSaldoSnapshot = n2 + n1 + n;
-      let thnSaldo = r.tahunSaldo || r.tahun || '';
-
-      let displaySaldoSnapshot = `
-        <div class="text-center small">
-          <span class="badge bg-light text-dark border me-1" title="N-2">N-2: <b>${n2}</b></span>
-          <span class="badge bg-light text-dark border me-1" title="N-1">N-1: <b>${n1}</b></span>
-          <span class="badge bg-light text-primary border" title="N">N: <b>${n}</b></span>
-          <div class="mt-1 fw-bold text-success">
-            Total: ${totalSaldoSnapshot} Hari ${thnSaldo ? `<span class="text-muted fw-normal">(${thnSaldo})</span>` : ''}
-          </div>
-        </div>
-      `;
-
-      let colFormACC = '';
-      const linkACC = r.fileApproved || r.suratDisetujui;
-
-      if (linkACC && String(linkACC).startsWith('http')) {
-        colFormACC = `
-          <a href="${escapeHtml(linkACC)}" target="_blank" class="btn btn-sm btn-outline-success me-1 mb-1" title="Lihat Berkas Disetujui">
-            <i class="bi bi-file-earmark-pdf me-1"></i> Lihat File
-          </a>
-          <button class="btn btn-sm btn-light border text-secondary mb-1" onclick="bukaModalUploadACC(${r.rowIndex})" title="Ganti File">
-            <i class="bi bi-pencil"></i>
-          </button>
-        `;
-      } else {
-        colFormACC = `
-          <button class="btn btn-sm btn-success fw-semibold" onclick="bukaModalUploadACC(${r.rowIndex})">
-            <i class="bi bi-cloud-upload me-1"></i> Upload ACC
-          </button>
-        `;
-      }
-
-      const trR = document.createElement('tr');
-      trR.innerHTML = `
-        <td class="text-center">${idx + 1}</td>
-        <td class="text-center small">${escapeHtml(r.tanggalPengajuan || r.Timestamp || r.timestamp)}</td>
-        <td><b class="text-primary">${escapeHtml(r.jenisCuti)}</b></td>
-        <td class="text-center"><span class="badge bg-secondary">${r.lamaCuti || 0} Hari</span></td>
-        <td class="small">${escapeHtml(r.mulaiTanggal || r.tglMulai)} <br><small class="text-muted">s.d.</small> ${escapeHtml(r.sampaiTanggal || r.tglSelesai)}</td>
-        <td class="small"><b>Alasan:</b> ${escapeHtml(r.alasan)}<br><span class="text-muted"><b>Alamat:</b> ${escapeHtml(r.alamat)}</span></td>
-        <td class="text-center">${linkFile}</td>
-        <td class="bg-light bg-opacity-50 align-middle">${displaySaldoSnapshot}</td>
-        <td class="text-center align-middle">${colFormACC}</td>
-      `;
-      tbodyRiwayat.appendChild(trR);
+    // --- PROSES SORTING MENGGUNAKAN HELPER ---
+    res.data.sort((a, b) => {
+      const rawA = a.timestamp || a.Timestamp || a.tanggalPengajuan || a.tglPengajuan || '';
+      const rawB = b.timestamp || b.Timestamp || b.tanggalPengajuan || b.tglPengajuan || '';
+      return parseTanggalIndo(rawB) - parseTanggalIndo(rawA);
     });
+
+    window.activeRiwayatData = res.data;
+    populateSelectTanggalPengajuan(res.data);
+    renderTabelRiwayatFromCache();
 
   } catch (err) {
     tbodyRiwayat.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger">Gagal memuat riwayat: ${escapeHtml(err.message || err)}</td></tr>`;
@@ -790,7 +770,7 @@ async function simpanRiwayatSaldoManual(e) {
 
   const n2 = Number(document.getElementById('manualN2').value) || 0;
   const n1 = Number(document.getElementById('manualN1').value) || 0;
-  const n = Number(document.getElementById('manualN').value) || 0;
+  const n  = Number(document.getElementById('manualN').value) || 0;
   const total = n2 + n1 + n;
   const tahun = Number(document.getElementById('manualTahun').value) || new Date().getFullYear();
 
@@ -822,6 +802,23 @@ async function simpanRiwayatSaldoManual(e) {
     if (res.success) {
       showToast("Sukses", res.message || "Snapshot saldo berhasil diperbarui!", "success");
 
+      // UPDATE DATA CACHE LOKAL SECARA LANGSUNG
+      if (window.activeRiwayatData && window.activeRiwayatData.length > 0) {
+        const itemIdx = window.activeRiwayatData.findIndex(r => String(r.rowIndex) === String(rowIndex));
+        if (itemIdx !== -1) {
+          window.activeRiwayatData[itemIdx].n2_saldo = n2;
+          window.activeRiwayatData[itemIdx].n1_saldo = n1;
+          window.activeRiwayatData[itemIdx].n_saldo  = n;
+          window.activeRiwayatData[itemIdx].tahunSaldo = tahun;
+          
+          window.activeRiwayatData[itemIdx].n2 = n2;
+          window.activeRiwayatData[itemIdx].n1 = n1;
+          window.activeRiwayatData[itemIdx].n  = n;
+        }
+      }
+
+      renderTabelRiwayatFromCache();
+
       const form = document.getElementById('formRiwayatSaldoManual');
       if (form) form.reset();
       
@@ -829,9 +826,6 @@ async function simpanRiwayatSaldoManual(e) {
         document.getElementById('manualTahun').value = new Date().getFullYear();
       }
 
-      if (typeof bukaModalRiwayat === 'function') {
-        bukaModalRiwayat(activeRiwayatNip, activeRiwayatNama);
-      }
       if (typeof loadData === 'function') {
         loadData();
       }
@@ -843,6 +837,262 @@ async function simpanRiwayatSaldoManual(e) {
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<i class="bi bi-save me-1"></i> Simpan Saldo Snapshot`;
+  }
+}
+
+// RENDER TABEL RIWAYAT DARI CACHE (DENGAN PAGINATION & LAMPIRAN)
+function renderTabelRiwayatFromCache() {
+  const tbodyRiwayat = document.getElementById('riwayatTableBody');
+  if (!tbodyRiwayat || !window.activeRiwayatData) return;
+
+  tbodyRiwayat.innerHTML = '';
+  const totalItems = window.activeRiwayatData.length;
+
+  if (totalItems === 0) {
+    tbodyRiwayat.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">Data riwayat tidak ditemukan.</td></tr>`;
+    return;
+  }
+
+  // LOGIKA PAGINATION (5 DATA PER HALAMAN)
+  const totalPages = Math.ceil(totalItems / itemsPerPageRiwayat);
+  if (currentPageRiwayat > totalPages) currentPageRiwayat = totalPages;
+  if (currentPageRiwayat < 1) currentPageRiwayat = 1;
+
+  const startIndex = (currentPageRiwayat - 1) * itemsPerPageRiwayat;
+  const endIndex = Math.min(startIndex + itemsPerPageRiwayat, totalItems);
+  const pageData = window.activeRiwayatData.slice(startIndex, endIndex);
+
+  pageData.forEach((r, idx) => {
+    // A. LOGIKA LAMPIRAN BERKAS
+    let linkFile = '-';
+    const fileLampiran = r.fileSakit || r.fileLampiran || r.lampiran;
+
+    if (fileLampiran && String(fileLampiran).startsWith('http')) {
+      linkFile = `
+        <a href="${escapeHtml(fileLampiran)}" target="_blank" class="btn btn-sm btn-outline-primary mb-1" title="Lihat Lampiran">
+          <i class="bi bi-file-earmark-pdf"></i> Lihat File
+        </a>
+        <button class="btn btn-sm btn-light border text-secondary mb-1" onclick="bukaModalUploadLampiran(${r.rowIndex})" title="Ganti Lampiran">
+          <i class="bi bi-pencil"></i>
+        </button>
+      `;
+    } else {
+      linkFile = `
+        <button class="btn btn-sm btn-outline-primary" onclick="bukaModalUploadLampiran(${r.rowIndex})">
+          <i class="bi bi-paperclip me-1"></i> Upload
+        </button>
+      `;
+    }
+
+    // B. LOGIKA SNAPSHOT SALDO
+    let n2 = parseInt(r.n2_saldo !== undefined ? r.n2_saldo : r.n2) || 0;
+    let n1 = parseInt(r.n1_saldo !== undefined ? r.n1_saldo : r.n1) || 0;
+    let n  = parseInt(r.n_saldo  !== undefined ? r.n_saldo  : r.n)  || 0;
+    let totalSaldoSnapshot = n2 + n1 + n;
+    let thnSaldo = r.tahunSaldo || r.tahun || '';
+
+    let displaySaldoSnapshot = `
+      <div class="text-center small">
+        <span class="badge bg-light text-dark border me-1" title="N-2">N-2: <b>${n2}</b></span>
+        <span class="badge bg-light text-dark border me-1" title="N-1">N-1: <b>${n1}</b></span>
+        <span class="badge bg-light text-primary border" title="N">N: <b>${n}</b></span>
+        <div class="mt-1 fw-bold text-success">
+          Total: ${totalSaldoSnapshot} Hari ${thnSaldo ? `<span class="text-muted fw-normal">(${thnSaldo})</span>` : ''}
+        </div>
+      </div>
+    `;
+
+    // C. LOGIKA FORM ACC
+    let colFormACC = '';
+    const linkACC = r.fileApproved || r.suratDisetujui;
+
+    if (linkACC && String(linkACC).startsWith('http')) {
+      colFormACC = `
+        <a href="${escapeHtml(linkACC)}" target="_blank" class="btn btn-sm btn-outline-success me-1 mb-1" title="Lihat Berkas Disetujui">
+          <i class="bi bi-file-earmark-pdf me-1"></i> Lihat File
+        </a>
+        <button class="btn btn-sm btn-light border text-secondary mb-1" onclick="bukaModalUploadACC(${r.rowIndex})" title="Ganti File">
+          <i class="bi bi-pencil"></i>
+        </button>
+      `;
+    } else {
+      colFormACC = `
+        <button class="btn btn-sm btn-success fw-semibold" onclick="bukaModalUploadACC(${r.rowIndex})">
+          <i class="bi bi-cloud-upload me-1"></i> Upload ACC
+        </button>
+      `;
+    }
+
+    const trR = document.createElement('tr');
+    trR.innerHTML = `
+      <td class="text-center">${startIndex + idx + 1}</td>
+      <td class="text-center small">${escapeHtml(r.tanggalPengajuan || r.Timestamp || r.timestamp)}</td>
+      <td><b class="text-primary">${escapeHtml(r.jenisCuti)}</b></td>
+      <td class="text-center"><span class="badge bg-secondary">${r.lamaCuti || 0} Hari</span></td>
+      <td class="small">${escapeHtml(r.mulaiTanggal || r.tglMulai)} <br><small class="text-muted">s.d.</small> ${escapeHtml(r.sampaiTanggal || r.tglSelesai)}</td>
+      <td class="small"><b>Alasan:</b> ${escapeHtml(r.alasan)}<br><span class="text-muted"><b>Alamat:</b> ${escapeHtml(r.alamat)}</span></td>
+      <td class="text-center align-middle">${linkFile}</td>
+      <td class="bg-light bg-opacity-50 align-middle">${displaySaldoSnapshot}</td>
+      <td class="text-center align-middle">${colFormACC}</td>
+    `;
+    tbodyRiwayat.appendChild(trR);
+  });
+
+  // UPDATE KONTROL PAGINATION UI
+  renderPaginationRiwayatUI(totalPages, totalItems, startIndex + 1, endIndex);
+}
+
+// RENDER TOMBOL PAGINATION
+function renderPaginationRiwayatUI(totalPages, totalItems, startItem, endItem) {
+  const info = document.getElementById('riwayatPageInfo');
+  const nav = document.getElementById('riwayatPagination');
+  
+  if (info) {
+    info.innerText = `Menampilkan ${startItem}-${endItem} dari ${totalItems} data (Halaman ${currentPageRiwayat} dari ${totalPages})`;
+  }
+
+  if (!nav) return;
+  nav.innerHTML = '';
+
+  if (totalPages <= 1) return;
+
+  // Tombol Prev
+  const liPrev = document.createElement('li');
+  liPrev.className = `page-item ${currentPageRiwayat === 1 ? 'disabled' : ''}`;
+  liPrev.innerHTML = `<a class="page-link" href="#" onclick="gantiHalamanRiwayat(${currentPageRiwayat - 1}); return false;">Prev</a>`;
+  nav.appendChild(liPrev);
+
+  // Tombol Nomor Halaman
+  for (let i = 1; i <= totalPages; i++) {
+    const li = document.createElement('li');
+    li.className = `page-item ${i === currentPageRiwayat ? 'active' : ''}`;
+    li.innerHTML = `<a class="page-link" href="#" onclick="gantiHalamanRiwayat(${i}); return false;">${i}</a>`;
+    nav.appendChild(li);
+  }
+
+  // Tombol Next
+  const liNext = document.createElement('li');
+  liNext.className = `page-item ${currentPageRiwayat === totalPages ? 'disabled' : ''}`;
+  liNext.innerHTML = `<a class="page-link" href="#" onclick="gantiHalamanRiwayat(${currentPageRiwayat + 1}); return false;">Next</a>`;
+  nav.appendChild(liNext);
+}
+
+// NAVIGASI HALAMAN PAGINATION
+function gantiHalamanRiwayat(page) {
+  currentPageRiwayat = page;
+  renderTabelRiwayatFromCache();
+}
+
+// MODAL UPLOAD LAMPIRAN BERKAS (SAKIT/PENDUKUNG)
+function bukaModalUploadLampiran(rowIndex) {
+  document.getElementById('uploadLampiranRowIndex').value = rowIndex;
+  document.getElementById('fileLampiran').value = '';
+  const alertBox = document.getElementById('uploadLampiranStatusAlert');
+  alertBox.classList.add('d-none');
+  alertBox.innerText = '';
+  
+  modalUploadLampiranInstance.show();
+}
+
+// PROSES UPLOAD LAMPIRAN BERKAS
+async function handleProcessUploadLampiran(e) {
+  e.preventDefault();
+  
+  const rowIndex = document.getElementById('uploadLampiranRowIndex').value;
+  const fileInput = document.getElementById('fileLampiran');
+  const alertBox = document.getElementById('uploadLampiranStatusAlert');
+  const btnSubmit = document.getElementById('btnSubmitUploadLampiran');
+
+  if (!fileInput.files.length) {
+    showToast("Peringatan", "Silakan pilih berkas yang akan diunggah!", "warning");
+    return;
+  }
+
+  let file = fileInput.files[0];
+  const MAX_ALLOWED_SIZE = 10 * 1024 * 1024;
+
+  btnSubmit.disabled = true;
+  btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Memproses...`;
+  
+  alertBox.className = 'alert alert-info py-2 small';
+  alertBox.innerText = 'Memeriksa & mengoptimalkan ukuran berkas...';
+  alertBox.classList.remove('d-none');
+
+  try {
+    if (file.type.startsWith('image/')) {
+      file = await compressImage(file, 1200, 0.7);
+    }
+
+    if (file.size > MAX_ALLOWED_SIZE) {
+      alertBox.className = 'alert alert-danger py-2 small';
+      alertBox.innerText = `Ukuran berkas (${(file.size / (1024*1024)).toFixed(2)} MB) terlalu besar! Maksimal 10 MB.`;
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload Lampiran`;
+      return;
+    }
+
+    alertBox.innerText = 'Mengunggah berkas ke Google Drive...';
+
+    const reader = new FileReader();
+
+    reader.onerror = () => {
+      alertBox.className = 'alert alert-danger py-2 small';
+      alertBox.innerText = 'Gagal membaca berkas dari perangkat.';
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload Lampiran`;
+    };
+
+    reader.onload = async function(event) {
+      try {
+        const base64Data = event.target.result.split(',')[1];
+        
+        const payload = {
+          action: 'uploadLampiranFile',
+          rowIndex: rowIndex,
+          folderId: FOLDER_ID,
+          fileName: `Lampiran_Cuti_${activeRiwayatNip}_${Date.now()}_${file.name}`,
+          mimeType: file.type,
+          fileData: base64Data
+        };
+
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+          alertBox.className = 'alert alert-success py-2 small';
+          alertBox.innerText = 'Berkas lampiran berhasil diunggah!';
+          
+          setTimeout(() => {
+            modalUploadLampiranInstance.hide();
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload Lampiran`;
+            showToast("Berhasil", "Berkas Lampiran berhasil diunggah!", "success");
+            
+            bukaModalRiwayat(activeRiwayatNip, activeRiwayatNama);
+          }, 800);
+        } else {
+          throw new Error(result.message || 'Gagal menyimpan berkas di server.');
+        }
+      } catch (err) {
+        alertBox.className = 'alert alert-danger py-2 small';
+        alertBox.innerText = 'Gagal upload: ' + (err.message || err);
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload Lampiran`;
+      }
+    };
+
+    reader.readAsDataURL(file);
+
+  } catch (err) {
+    alertBox.className = 'alert alert-danger py-2 small';
+    alertBox.innerText = 'Error: ' + (err.message || err);
+    btnSubmit.disabled = false;
+    btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload Lampiran`;
   }
 }
 
@@ -1036,55 +1286,31 @@ async function simpanSaldo(e) {
   }
 }
 
-// KONFIRMASI HAPUS
+// KONFIRMASI HAPUS DATA SALDO
 async function konfirmasiHapus(nip, nama) {
-  const konfirmasi = confirm(`⚠️ TINDAKAN INI TIDAK DAPAT DIBATALKAN!\n\nApakah Anda yakin ingin menghapus data saldo cuti untuk:\nNama: ${nama}\nNIP: ${nip}?`);
-  
-  if (!konfirmasi) return;
-
-  const payload = {
-    action: 'hapusSaldo',
-    nip: nip
-  };
+  if (!confirm(`Apakah Anda yakin ingin menghapus data saldo cuti pegawai ${nama} (NIP: ${nip})?`)) {
+    return;
+  }
 
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ action: 'hapusSaldo', nip: nip })
     });
-
     const res = await response.json();
 
     if (res.success) {
-      showToast("Terhapus", `Data saldo pegawai ${nama} berhasil dihapus.`, "success");
+      showToast("Sukses", res.message || "Data saldo berhasil dihapus.", "success");
       loadData();
     } else {
-      showToast("Gagal Hapus", res.message || "Gagal menghapus data saldo.", "danger");
+      showToast("Gagal", res.message || "Gagal menghapus data.", "danger");
     }
   } catch (err) {
-    showToast("Error", "Gagal menghubungi server: " + (err.message || err), "danger");
+    showToast("Error Network", "Gagal menghubungi server: " + (err.message || err), "danger");
   }
 }
+</script>
 
-// FILTER TABLE
-function filterTable() {
-  const input = document.getElementById('filterInput').value.toLowerCase();
-  const rows = document.querySelectorAll('#saldoTableBody tr');
-
-  rows.forEach(row => {
-    if (row.cells.length <= 1) return;
-
-    const nip = row.cells[1].textContent.toLowerCase();
-    const nama = row.cells[2].textContent.toLowerCase();
-
-    if (nip.includes(input) || nama.includes(input)) {
-      row.style.display = '';
-    } else {
-      row.style.display = 'none';
-    }
-  });
-}
-  </script>
 </body>
 </html>
