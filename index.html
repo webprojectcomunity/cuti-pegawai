@@ -174,15 +174,16 @@
           <table class="table table-bordered table-hover align-middle mb-0">
             <thead class="table-dark align-middle">
               <tr>
-                <th width="4%" class="text-center">No</th>
+                <th width="3%" class="text-center">No</th>
                 <th>Tgl Pengajuan</th>
                 <th>Jenis Cuti</th>
                 <th class="text-center">Lama</th>
                 <th>Mulai s.d. Selesai</th>
                 <th>Alasan Cuti</th>
                 <th>Alamat Selama Cuti</th>
-                <th class="text-center" width="10%">Lampiran</th>
-                <th class="text-center" width="15%">Form Disetujui (Kolom V)</th>
+                <th class="text-center" width="12%">Lampiran</th>
+                <th class="text-center" width="13%">Form Disetujui (Kolom V)</th>
+                <th width="16%" class="text-center bg-primary bg-opacity-75">Snapshot Saldo Cuti<br><small class="fw-normal">(N-2 | N-1 | N = Total)</small></th>
               </tr>
             </thead>
             <tbody id="riwayatTableBody">
@@ -216,6 +217,39 @@
     </div>
   </div>
 
+  <!-- ==================== MODAL UPLOAD LAMPIRAN ==================== -->
+  <div class="modal fade" id="modalUploadLampiran" tabindex="-1" aria-labelledby="modalUploadLampiranLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white py-2">
+          <h5 class="modal-title fs-6" id="modalUploadLampiranLabel">
+            <i class="bi bi-paperclip me-2"></i>Upload Lampiran Cuti
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted mb-3">
+            Silakan unggah dokumen pendukung (Surat Dokter / Dokumen Cuti) format PDF atau Gambar.
+          </p>
+          <form id="formUploadLampiran" onsubmit="handleProcessUploadFile(event, 'uploadLampiranFile')">
+            <input type="hidden" id="uploadLampiranRowIndex">
+            <div class="mb-3">
+              <label for="fileLampiran" class="form-label fw-bold small">Pilih Berkas Lampiran (PDF / Image)</label>
+              <input class="form-control form-control-sm" type="file" id="fileLampiran" accept=".pdf,image/*" required>
+            </div>
+            <div id="uploadLampiranStatusAlert" class="alert alert-info py-2 small d-none" role="alert"></div>
+            <div class="d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+              <button type="submit" id="btnSubmitUploadLampiran" class="btn btn-sm btn-primary">
+                <i class="bi bi-upload me-1"></i> Mulai Upload
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== MODAL UPLOAD FORM DISETUJUI ==================== -->
   <div class="modal fade" id="modalUploadACC" tabindex="-1" aria-labelledby="modalUploadACCLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -230,13 +264,13 @@
           <p class="small text-muted mb-3">
             Silakan unggah dokumen PDF/Gambar Form Cuti yang telah dicetak dan ditandatangani pimpinan. File akan diunggah ke Google Drive target.
           </p>
-          <form id="formUploadACC" onsubmit="handleProcessUploadACC(event)">
-            <input type="hidden" id="uploadRowIndex">
+          <form id="formUploadACC" onsubmit="handleProcessUploadFile(event, 'uploadApprovedFile')">
+            <input type="hidden" id="uploadAccRowIndex">
             <div class="mb-3">
               <label for="fileACC" class="form-label fw-bold small">Pilih File Berkas (PDF / Image)</label>
               <input class="form-control form-control-sm" type="file" id="fileACC" accept=".pdf,image/*" required>
             </div>
-            <div id="uploadStatusAlert" class="alert alert-info py-2 small d-none" role="alert"></div>
+            <div id="uploadAccStatusAlert" class="alert alert-info py-2 small d-none" role="alert"></div>
             <div class="d-flex justify-content-end gap-2">
               <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
               <button type="submit" id="btnSubmitUploadACC" class="btn btn-sm btn-success">
@@ -249,14 +283,20 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-  <script>
+<script>
   const API_URL = "https://script.google.com/macros/s/AKfycbx9EsQQgRPA198A00P__gJfo3RX6iBo4olrHKPIlgp8TeTZtwG2YakDFvEjh9UKQTJweQ/exec";
   const FOLDER_ID = '1eNgD7YvDMqpPtFMGmn2RIKmITduM9RK5';
   
   let modalFormCutiInstance = null;
   let modalUploadACCInstance = null;
+  let modalUploadLampiranInstance = null;
+  
+  // State untuk Data dan Pagination
+  window.activeRiwayatData = [];
+  let currentPage = 1;
+  const rowsPerPage = 5;
 
   // Helper untuk sanitasi HTML mencegah XSS
   function escapeHtml(str) {
@@ -272,13 +312,12 @@
   // Helper Kompresi Gambar Menggunakan HTML5 Canvas
   function compressImage(file, maxWidth = 1200, quality = 0.7) {
     return new Promise((resolve) => {
-      // Jika berkas bukan gambar (misal PDF), kembalikan file asli tanpa kompresi
       if (!file.type.startsWith('image/')) {
         return resolve(file);
       }
 
       const reader = new FileReader();
-      reader.onerror = () => resolve(file); // Fallback ke file asli jika error
+      reader.onerror = () => resolve(file);
       reader.onload = (e) => {
         const img = new Image();
         img.onerror = () => resolve(file);
@@ -287,7 +326,6 @@
           let width = img.width;
           let height = img.height;
 
-          // Resize rasio jika lebar gambar melebihi maxWidth
           if (width > maxWidth) {
             height = Math.round((height * maxWidth) / width);
             width = maxWidth;
@@ -298,7 +336,6 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Convert canvas kembali ke Object File
           canvas.toBlob((blob) => {
             if (!blob) return resolve(file);
             const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
@@ -318,6 +355,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     modalFormCutiInstance = new bootstrap.Modal(document.getElementById('modalFormCuti'));
     modalUploadACCInstance = new bootstrap.Modal(document.getElementById('modalUploadACC'));
+    modalUploadLampiranInstance = new bootstrap.Modal(document.getElementById('modalUploadLampiran'));
 
     const activeNip = sessionStorage.getItem('logged_nip');
     if (activeNip) {
@@ -353,7 +391,6 @@
     btnLogin.disabled = true;
     btnLogin.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Memeriksa NIP...`;
 
-    // 1. Validasi Password/PIN
     if (password !== "2102123") {
       alertBox.innerText = "Password / PIN salah!";
       alertBox.classList.remove('d-none');
@@ -365,7 +402,6 @@
     try {
       let userFound = false;
 
-      // 2. Cek NIP ke API Saldo secara eksplisit
       const responseSaldo = await fetch(`${API_URL}?action=getSaldo&nip=${encodeURIComponent(nip)}`);
       const resSaldo = await responseSaldo.json();
 
@@ -373,7 +409,6 @@
         userFound = resSaldo.data.some(item => String(item.nip).trim() === nip);
       }
 
-      // 3. Jika tidak ditemukan di Saldo, coba verifikasi ke Riwayat Cuti
       if (!userFound) {
         const responseRiwayat = await fetch(`${API_URL}?action=getRiwayatCuti&nip=${encodeURIComponent(nip)}`);
         const resRiwayat = await responseRiwayat.json();
@@ -383,7 +418,6 @@
         }
       }
 
-      // 4. Eksekusi Hasil Validasi NIP
       if (userFound) {
         sessionStorage.setItem('logged_nip', nip);
         showDashboard(nip);
@@ -411,7 +445,7 @@
     loadRiwayatPegawai(nip);
   }
 
-  // Mengambil Data Saldo Pegawai Pasca Login (Hanya Filter NIP Terkait)
+  // Mengambil Data Saldo Pegawai
   async function loadSaldoPegawai(nip) {
     const tbodySaldo = document.getElementById('saldoTableBody');
     tbodySaldo.innerHTML = `<tr><td colspan="8" class="text-center py-3"><div class="spinner-border spinner-border-sm text-info me-1"></div> Memuat saldo cuti...</td></tr>`;
@@ -425,7 +459,6 @@
         return;
       }
 
-      // Filter ketat NIP (Dihapus fallback ke seluruh data)
       const targetData = result.data.filter(item => String(item.nip).trim() === String(nip).trim());
 
       if (targetData.length === 0) {
@@ -464,12 +497,51 @@
     }
   }
 
-  // Mengambil Data Riwayat Cuti Pegawai (Filter Strict NIP)
+  // Helper Parsing Tanggal String (Indonesia, Slash, maupun ISO Date)
+  function parseDateString(dateStr) {
+    if (!dateStr) return 0;
+    const str = String(dateStr).trim();
+
+    if (str.includes('T') || (str.includes('-') && !isNaN(Date.parse(str)))) {
+      const parsedIso = Date.parse(str);
+      if (!isNaN(parsedIso)) return parsedIso;
+    }
+
+    if (str.includes('/')) {
+      const parts = str.split('/');
+      if (parts.length === 3) {
+        return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10)).getTime();
+      }
+    }
+
+    const bulanMap = {
+      'januari': 0, 'jan': 0, 'februari': 1, 'feb': 1, 'maret': 2, 'mar': 2,
+      'april': 3, 'apr': 3, 'mei': 4, 'juni': 5, 'jun': 5, 'juli': 6, 'jul': 6,
+      'agustus': 7, 'agu': 7, 'ags': 7, 'september': 8, 'sep': 8, 'oktober': 9, 'okt': 9,
+      'november': 10, 'nov': 10, 'desember': 11, 'des': 11
+    };
+
+    const parts = str.split(/\s+/);
+    if (parts.length >= 3) {
+      const tgl = parseInt(parts[0], 10);
+      const blnTeks = parts[1].toLowerCase();
+      const thn = parseInt(parts[2], 10);
+
+      if (!isNaN(tgl) && !isNaN(thn) && bulanMap[blnTeks] !== undefined) {
+        return new Date(thn, bulanMap[blnTeks], tgl).getTime();
+      }
+    }
+
+    const fallback = Date.parse(str);
+    return isNaN(fallback) ? 0 : fallback;
+  }
+
+  // Mengambil Data Riwayat Cuti Pegawai
   async function loadRiwayatPegawai(nip) {
     const tbody = document.getElementById('riwayatTableBody');
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="text-center py-5">
+        <td colspan="10" class="text-center py-5">
           <div class="spinner-border text-info" role="status"></div>
           <p class="mt-2 text-muted mb-0">Memuat data riwayat Anda...</p>
         </td>
@@ -481,107 +553,235 @@
       const res = await response.json();
 
       if (res.success && res.data && res.data.length > 0) {
-        // Filter ekstra di client untuk memastikan hanya menampilkan riwayat NIP yang login
-        const dataUser = res.data.filter(r => String(r.nip || '').trim() === String(nip).trim());
+        let dataUser = res.data.filter(r => String(r.nip || '').trim() === String(nip).trim());
 
         if (dataUser.length === 0) {
           document.getElementById('totalRiwayatBadge').innerText = `0 Pengajuan`;
           tbody.innerHTML = `
             <tr>
-              <td colspan="9" class="text-center py-4 text-muted">
+              <td colspan="10" class="text-center py-4 text-muted">
                 <i class="bi bi-inbox fs-3 d-block mb-1 text-secondary"></i>
                 Belum ada riwayat pengajuan cuti.
               </td>
             </tr>
           `;
+          renderPaginationControls(0);
           return;
         }
+
+        // Urutkan data berdasarkan tanggalPengajuan dari Terbaru -> Tertua
+        dataUser.sort((a, b) => parseDateString(b.tanggalPengajuan) - parseDateString(a.tanggalPengajuan));
 
         if (document.getElementById('userNama').innerText === 'Memuat...' && dataUser[0].nama) {
           document.getElementById('userNama').innerText = dataUser[0].nama;
         }
         document.getElementById('totalRiwayatBadge').innerText = `${dataUser.length} Pengajuan`;
 
-        let htmlRows = '';
-        dataUser.forEach((r, idx) => {
-          let linkFile = '-';
-          if (r.fileSakit && String(r.fileSakit).startsWith('http')) {
-            linkFile = `<a href="${escapeHtml(r.fileSakit)}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-earmark-pdf"></i> Lihat File</a>`;
-          } else if (r.fileSakit && r.fileSakit !== '-') {
-            linkFile = `<small class="text-muted">${escapeHtml(r.fileSakit)}</small>`;
-          }
-
-          // Kolom V - File Form Cuti Disetujui
-          let colFormACC = '';
-          const linkACC = r.fileApproved || r.suratDisetujui;
-
-          if (linkACC && String(linkACC).startsWith('http')) {
-            colFormACC = `
-              <a href="${escapeHtml(linkACC)}" target="_blank" class="btn btn-sm btn-outline-success me-1 mb-1" title="Lihat Berkas Disetujui">
-                <i class="bi bi-file-earmark-pdf me-1"></i> Lihat File
-              </a>
-              <button class="btn btn-sm btn-light border text-secondary mb-1" onclick="bukaModalUploadACC(${r.rowIndex})" title="Ganti File">
-                <i class="bi bi-pencil"></i>
-              </button>
-            `;
-          } else {
-            colFormACC = `
-              <button class="btn btn-sm btn-success fw-semibold" onclick="bukaModalUploadACC(${r.rowIndex})">
-                <i class="bi bi-cloud-upload me-1"></i> Upload ACC
-              </button>
-            `;
-          }
-
-          htmlRows += `
-            <tr>
-              <td class="text-center">${idx + 1}</td>
-              <td>${escapeHtml(r.tanggalPengajuan)}</td>
-              <td><span class="fw-semibold text-primary">${escapeHtml(r.jenisCuti)}</span></td>
-              <td class="text-center"><span class="badge bg-secondary">${r.lamaCuti || 0} Hari</span></td>
-              <td>${escapeHtml(r.mulaiTanggal)} <br><small class="text-muted">s.d.</small> ${escapeHtml(r.sampaiTanggal)}</td>
-              <td>${escapeHtml(r.alasan)}</td>
-              <td><small>${escapeHtml(r.alamat)}</small></td>
-              <td class="text-center">${linkFile}</td>
-              <td class="text-center">${colFormACC}</td>
-            </tr>
-          `;
-        });
-        tbody.innerHTML = htmlRows;
+        window.activeRiwayatData = dataUser;
+        currentPage = 1; // Reset ke halaman 1
+        renderTabelRiwayatFromCache();
       } else {
         document.getElementById('totalRiwayatBadge').innerText = `0 Pengajuan`;
         tbody.innerHTML = `
           <tr>
-            <td colspan="9" class="text-center py-4 text-muted">
+            <td colspan="10" class="text-center py-4 text-muted">
               <i class="bi bi-inbox fs-3 d-block mb-1 text-secondary"></i>
               Belum ada riwayat pengajuan cuti.
             </td>
           </tr>
         `;
+        renderPaginationControls(0);
       }
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger">Gagal mengambil data: ${escapeHtml(err.message || err)}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-danger">Gagal mengambil data: ${escapeHtml(err.message || err)}</td></tr>`;
     }
   }
 
-  // Menampilkan Modal Upload File ACC
+  // Render Tabel Riwayat berdasarkan Halaman (5 Data per Halaman)
+  function renderTabelRiwayatFromCache() {
+    const tbodyRiwayat = document.getElementById('riwayatTableBody');
+    if (!tbodyRiwayat || !window.activeRiwayatData) return;
+
+    tbodyRiwayat.innerHTML = '';
+    const totalData = window.activeRiwayatData.length;
+
+    // Hitung Slice Data untuk Halaman Aktif
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = Math.min(startIndex + rowsPerPage, totalData);
+    const paginatedData = window.activeRiwayatData.slice(startIndex, endIndex);
+
+    paginatedData.forEach((r, idx) => {
+      const globalIndex = startIndex + idx + 1; // Nomor urut global
+
+      // Kolom Lampiran
+      let colLampiran = '';
+      const linkLampiran = r.fileSakit || r.lampiran;
+
+      if (linkLampiran && String(linkLampiran).startsWith('http')) {
+        colLampiran = `
+          <a href="${escapeHtml(linkLampiran)}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1" title="Lihat Lampiran">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Lihat File
+          </a>
+          <button class="btn btn-sm btn-light border text-secondary mb-1" onclick="bukaModalUploadLampiran(${r.rowIndex})" title="Ganti Berkas">
+            <i class="bi bi-pencil"></i>
+          </button>
+        `;
+      } else {
+        colLampiran = `
+          <button class="btn btn-sm btn-outline-primary fw-semibold" onclick="bukaModalUploadLampiran(${r.rowIndex})">
+            <i class="bi bi-upload me-1"></i> Upload
+          </button>
+        `;
+      }
+
+      // Kolom Form Disetujui
+      let colFormACC = '';
+      const linkACC = r.fileApproved || r.suratDisetujui;
+
+      if (linkACC && String(linkACC).startsWith('http')) {
+        colFormACC = `
+          <a href="${escapeHtml(linkACC)}" target="_blank" class="btn btn-sm btn-outline-success me-1 mb-1" title="Lihat Berkas Disetujui">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Lihat File
+          </a>
+          <button class="btn btn-sm btn-light border text-secondary mb-1" onclick="bukaModalUploadACC(${r.rowIndex})" title="Ganti File">
+            <i class="bi bi-pencil"></i>
+          </button>
+        `;
+      } else {
+        colFormACC = `
+          <button class="btn btn-sm btn-success fw-semibold" onclick="bukaModalUploadACC(${r.rowIndex})">
+            <i class="bi bi-cloud-upload me-1"></i> Upload ACC
+          </button>
+        `;
+      }
+
+      // Snapshot Saldo Cuti
+      let n2 = parseInt(r.n2_saldo !== undefined ? r.n2_saldo : r.n2) || 0;
+      let n1 = parseInt(r.n1_saldo !== undefined ? r.n1_saldo : r.n1) || 0;
+      let n  = parseInt(r.n_saldo  !== undefined ? r.n_saldo  : r.n)  || 0;
+      let totalSaldoSnapshot = n2 + n1 + n;
+      let thnSaldo = r.tahunSaldo || r.tahun || '';
+
+      let displaySaldoSnapshot = `
+        <div class="text-center small">
+          <span class="badge bg-light text-dark border me-1" title="N-2">N-2: <b>${n2}</b></span>
+          <span class="badge bg-light text-dark border me-1" title="N-1">N-1: <b>${n1}</b></span>
+          <span class="badge bg-light text-primary border" title="N">N: <b>${n}</b></span>
+          <div class="mt-1 fw-bold text-success">
+            Total: ${totalSaldoSnapshot} Hari ${thnSaldo ? `<span class="text-muted fw-normal">(${thnSaldo})</span>` : ''}
+          </div>
+        </div>
+      `;
+
+      let tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="text-center">${globalIndex}</td>
+        <td>${escapeHtml(r.tanggalPengajuan)}</td>
+        <td><span class="fw-semibold text-primary">${escapeHtml(r.jenisCuti)}</span></td>
+        <td class="text-center"><span class="badge bg-secondary">${r.lamaCuti || 0} Hari</span></td>
+        <td>${escapeHtml(r.mulaiTanggal)} <br><small class="text-muted">s.d.</small> ${escapeHtml(r.sampaiTanggal)}</td>
+        <td>${escapeHtml(r.alasan)}</td>
+        <td><small>${escapeHtml(r.alamat)}</small></td>
+        <td class="text-center">${colLampiran}</td>
+        <td class="text-center">${colFormACC}</td>
+        <td>${displaySaldoSnapshot}</td>
+      `;
+      tbodyRiwayat.appendChild(tr);
+    });
+
+    renderPaginationControls(totalData);
+  }
+
+  // Render Navigasi Pagination
+  function renderPaginationControls(totalData) {
+    let container = document.getElementById('paginationContainer');
+    
+    // Buat wadah pagination otomatis jika belum ada di HTML
+    if (!container) {
+      const parentCard = document.getElementById('riwayatTableBody')?.closest('.card-body') || document.querySelector('#dashboardSection');
+      container = document.createElement('div');
+      container.id = 'paginationContainer';
+      container.className = 'd-flex justify-content-between align-items-center mt-3 pt-2 border-top';
+      if (parentCard) parentCard.appendChild(container);
+    }
+
+    if (totalData === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const totalPages = Math.ceil(totalData / rowsPerPage);
+    const startNum = (currentPage - 1) * rowsPerPage + 1;
+    const endNum = Math.min(currentPage * rowsPerPage, totalData);
+
+    let paginationHtml = `
+      <div class="small text-muted">
+        Menampilkan <b>${startNum}</b> - <b>${endNum}</b> dari <b>${totalData}</b> data
+      </div>
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <button class="page-link" onclick="changePage(${currentPage - 1})">&laquo; Prev</button>
+          </li>
+    `;
+
+    for (let i = 1; i <= totalPages; i++) {
+      paginationHtml += `
+        <li class="page-item ${i === currentPage ? 'active' : ''}">
+          <button class="page-link" onclick="changePage(${i})">${i}</button>
+        </li>
+      `;
+    }
+
+    paginationHtml += `
+          <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <button class="page-link" onclick="changePage(${currentPage + 1})">Next &raquo;</button>
+          </li>
+        </ul>
+      </nav>
+    `;
+
+    container.innerHTML = paginationHtml;
+  }
+
+  // Pindah Halaman
+  function changePage(page) {
+    const totalPages = Math.ceil(window.activeRiwayatData.length / rowsPerPage);
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    renderTabelRiwayatFromCache();
+  }
+
+  // Tampilkan Modal Upload Form ACC
   function bukaModalUploadACC(rowIndex) {
-    document.getElementById('uploadRowIndex').value = rowIndex;
+    document.getElementById('uploadAccRowIndex').value = rowIndex;
     document.getElementById('fileACC').value = '';
-    const alertBox = document.getElementById('uploadStatusAlert');
+    const alertBox = document.getElementById('uploadAccStatusAlert');
     alertBox.classList.add('d-none');
     alertBox.innerText = '';
-    
     modalUploadACCInstance.show();
   }
 
-  // Proses Pengunggahan File Disetujui (Dengan Kompresi & Validasi Ukuran 10 MB)
-  async function handleProcessUploadACC(e) {
+  // Tampilkan Modal Upload Lampiran
+  function bukaModalUploadLampiran(rowIndex) {
+    document.getElementById('uploadLampiranRowIndex').value = rowIndex;
+    document.getElementById('fileLampiran').value = '';
+    const alertBox = document.getElementById('uploadLampiranStatusAlert');
+    alertBox.classList.add('d-none');
+    alertBox.innerText = '';
+    modalUploadLampiranInstance.show();
+  }
+
+  // Fungsi Generik untuk Mengunggah Berkas
+  async function handleProcessUploadFile(e, actionName) {
     e.preventDefault();
     
-    const rowIndex = document.getElementById('uploadRowIndex').value;
-    const fileInput = document.getElementById('fileACC');
-    const alertBox = document.getElementById('uploadStatusAlert');
-    const btnSubmit = document.getElementById('btnSubmitUploadACC');
+    const isLampiran = (actionName === 'uploadLampiranFile');
+    const rowIndex = document.getElementById(isLampiran ? 'uploadLampiranRowIndex' : 'uploadAccRowIndex').value;
+    const fileInput = document.getElementById(isLampiran ? 'fileLampiran' : 'fileACC');
+    const alertBox = document.getElementById(isLampiran ? 'uploadLampiranStatusAlert' : 'uploadAccStatusAlert');
+    const btnSubmit = document.getElementById(isLampiran ? 'btnSubmitUploadLampiran' : 'btnSubmitUploadACC');
+    const activeModal = isLampiran ? modalUploadLampiranInstance : modalUploadACCInstance;
 
     if (!fileInput.files.length) {
       alert("Silakan pilih berkas yang akan diunggah!");
@@ -589,27 +789,23 @@
     }
 
     let file = fileInput.files[0];
-    
-    // Batas maksimal berkas 10 MB
-    const MAX_ALLOWED_SIZE = 10 * 1024 * 1024; 
+    const MAX_ALLOWED_SIZE = 10 * 1024 * 1024;
 
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Memproses...`;
     
     alertBox.className = 'alert alert-info py-2 small';
-    alertBox.innerText = 'Memeriksa & mengoptimalkan ukuran berkas...';
+    alertBox.innerText = 'Memeriksa berkas...';
     alertBox.classList.remove('d-none');
 
     try {
-      // 1. Kompres gambar jika berupa berkas foto
       if (file.type.startsWith('image/')) {
         file = await compressImage(file, 1200, 0.7);
       }
 
-      // 2. Validasi jika ukurannya melebihi batas maksimal 10 MB
       if (file.size > MAX_ALLOWED_SIZE) {
         alertBox.className = 'alert alert-danger py-2 small';
-        alertBox.innerText = `Ukuran berkas (${(file.size / (1024*1024)).toFixed(2)} MB) terlalu besar! Maksimal 10 MB. Silakan kompres PDF Anda terlebih dahulu.`;
+        alertBox.innerText = `Ukuran berkas (${(file.size / (1024*1024)).toFixed(2)} MB) terlalu besar! Maksimal 10 MB.`;
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload`;
         return;
@@ -617,9 +813,7 @@
 
       alertBox.innerText = 'Mengunggah berkas ke Google Drive...';
 
-      // 3. Konversi ke Base64
       const reader = new FileReader();
-
       reader.onerror = () => {
         alertBox.className = 'alert alert-danger py-2 small';
         alertBox.innerText = 'Gagal membaca berkas dari perangkat.';
@@ -630,12 +824,13 @@
       reader.onload = async function(event) {
         try {
           const base64Data = event.target.result.split(',')[1];
+          const filePrefix = isLampiran ? 'Lampiran_Cuti' : 'Cuti_Disetujui';
           
           const payload = {
-            action: 'uploadApprovedFile',
+            action: actionName,
             rowIndex: rowIndex,
             folderId: FOLDER_ID,
-            fileName: `Cuti_Disetujui_${sessionStorage.getItem('logged_nip')}_${Date.now()}_${file.name}`,
+            fileName: `${filePrefix}_${sessionStorage.getItem('logged_nip')}_${Date.now()}_${file.name}`,
             mimeType: file.type,
             fileData: base64Data
           };
@@ -653,10 +848,10 @@
 
           if (result.success) {
             alertBox.className = 'alert alert-success py-2 small';
-            alertBox.innerText = 'Berkas berhasil diunggah dan disimpan ke Sheet!';
+            alertBox.innerText = 'Berkas berhasil diunggah!';
             
             setTimeout(() => {
-              modalUploadACCInstance.hide();
+              activeModal.hide();
               btnSubmit.disabled = false;
               btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload`;
               loadRiwayatPegawai(sessionStorage.getItem('logged_nip'));
