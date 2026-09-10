@@ -1108,107 +1108,73 @@ function bukaModalUploadACC(rowIndex) {
 }
 
 // PROSES UPLOAD BERKAS FORM ACC
+// HANDLER SUBMIT UPLOAD FORM ACC
 async function handleProcessUploadACC(e) {
   e.preventDefault();
-  
-  const rowIndex = document.getElementById('uploadRowIndex').value;
-  const fileInput = document.getElementById('fileACC');
-  const alertBox = document.getElementById('uploadStatusAlert');
+
   const btnSubmit = document.getElementById('btnSubmitUploadACC');
+  const alertBox = document.getElementById('uploadStatusAlert');
+  const fileInput = document.getElementById('fileACC');
+  const rowIndex = document.getElementById('uploadRowIndex').value;
 
   if (!fileInput.files.length) {
-    showToast("Peringatan", "Silakan pilih berkas yang akan diunggah!", "warning");
+    alertBox.className = "alert alert-warning py-2 small";
+    alertBox.innerText = "Pilih file terlebih dahulu.";
     return;
   }
 
-  let file = fileInput.files[0];
-  const MAX_ALLOWED_SIZE = 10 * 1024 * 1024;
-
+  const file = fileInput.files[0];
   btnSubmit.disabled = true;
-  btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Memproses...`;
-  
-  alertBox.className = 'alert alert-info py-2 small';
-  alertBox.innerText = 'Memeriksa & mengoptimalkan ukuran berkas...';
-  alertBox.classList.remove('d-none');
+  btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Mengunggah...`;
 
   try {
-    if (file.type.startsWith('image/')) {
-      file = await compressImage(file, 1200, 0.7);
-    }
+    // Read File sebagai Base64 DataURL
+    const base64Data = await convertFileToBase64(file);
 
-    if (file.size > MAX_ALLOWED_SIZE) {
-      alertBox.className = 'alert alert-danger py-2 small';
-      alertBox.innerText = `Ukuran berkas (${(file.size / (1024*1024)).toFixed(2)} MB) terlalu besar! Maksimal 10 MB.`;
-      btnSubmit.disabled = false;
-      btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload`;
-      return;
-    }
-
-    alertBox.innerText = 'Mengunggah berkas ke Google Drive...';
-
-    const reader = new FileReader();
-
-    reader.onerror = () => {
-      alertBox.className = 'alert alert-danger py-2 small';
-      alertBox.innerText = 'Gagal membaca berkas dari perangkat.';
-      btnSubmit.disabled = false;
-      btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload`;
+    const payload = {
+      action: 'uploadSuratDisetujui', // Disamakan dengan backend
+      rowIndex: Number(rowIndex),
+      fileName: `ACC_${Date.now()}_${file.name}`,
+      mimeType: file.type,
+      fileData: base64Data
     };
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
 
-    reader.onload = async function(event) {
-      try {
-        const base64Data = event.target.result.split(',')[1];
-        
-        const payload = {
-          action: 'uploadApprovedFile',
-          rowIndex: rowIndex,
-          folderId: FOLDER_ID,
-          fileName: `Cuti_Disetujui_${activeRiwayatNip}_${Date.now()}_${file.name}`,
-          mimeType: file.type,
-          fileData: base64Data
-        };
+    const res = await response.json();
 
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        });
-
-        const result = await res.json();
-
-        if (result.success) {
-          alertBox.className = 'alert alert-success py-2 small';
-          alertBox.innerText = 'Berkas berhasil diunggah dan disimpan!';
-          
-          setTimeout(() => {
-            modalUploadACCInstance.hide();
-            btnSubmit.disabled = false;
-            btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload`;
-            showToast("Berhasil", "Berkas Form ACC disetujui berhasil diunggah!", "success");
-            
-            bukaModalRiwayat(activeRiwayatNip, activeRiwayatNama);
-          }, 800);
-        } else {
-          throw new Error(result.message || 'Gagal menyimpan berkas di server.');
-        }
-      } catch (err) {
-        alertBox.className = 'alert alert-danger py-2 small';
-        alertBox.innerText = 'Gagal upload: ' + (err.message || err);
-        btnSubmit.disabled = false;
-        btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload`;
-      }
-    };
-
-    reader.readAsDataURL(file);
-
+    if (res.success) {
+      modalUploadACCInstance.hide();
+      showToast("Sukses", res.message || "Berkas ACC berhasil diunggah.", "success");
+      // Reload modal riwayat / tabel jika ada fungsi pencarian ulang
+      if (typeof muatRiwayatCuti === 'function') muatRiwayatCuti();
+    } else {
+      alertBox.className = "alert alert-danger py-2 small";
+      alertBox.innerText = res.message || "Gagal mengunggah file.";
+      alertBox.classList.remove('d-none');
+    }
   } catch (err) {
-    alertBox.className = 'alert alert-danger py-2 small';
-    alertBox.innerText = 'Error: ' + (err.message || err);
+    alertBox.className = "alert alert-danger py-2 small";
+    alertBox.innerText = "Error: " + (err.message || err);
+    alertBox.classList.remove('d-none');
+  } finally {
     btnSubmit.disabled = false;
     btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload`;
   }
 }
 
+// HELPER CONVERT FILE TO BASE64
+function convertFileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
 // MODAL TAMBAH SALDO CUTI
 function bukaModalTambah() {
   document.getElementById('formSaldo').reset();
@@ -1244,7 +1210,7 @@ function bukaModalEdit(index) {
   modalInstance.show();
 }
 
-// SIMPAN SALDO UTAMA
+/// SIMPAN SALDO UTAMA
 async function simpanSaldo(e) {
   e.preventDefault();
 
@@ -1252,6 +1218,8 @@ async function simpanSaldo(e) {
   btnSimpan.disabled = true;
   btnSimpan.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...`;
 
+  // Payload sudah sangat tepat menggunakan action 'simpanSaldo' 
+  // agar langsung ditangkap oleh backend Code.gs
   const payload = {
     action: 'simpanSaldo',
     nip: document.getElementById('modalNip').value.trim(),
@@ -1274,7 +1242,7 @@ async function simpanSaldo(e) {
     if (res.success) {
       modalInstance.hide();
       showToast("Sukses", res.message || "Data saldo cuti berhasil disimpan.", "success");
-      loadData();
+      loadData(); // Refresh data di tabel
     } else {
       showToast("Gagal", res.message || "Gagal menyimpan data saldo.", "danger");
     }
