@@ -323,12 +323,12 @@
     const namaPegawai = document.getElementById('disp_nama').innerText || 'Pegawai';
     
     const options = {
-      margin:       0,
-      filename:     `Surat_Cuti_${namaPegawai}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
-      jsPDF:        { unit: 'cm', format: [21.5, 33], orientation: 'portrait' },
-      pagebreak:    { mode: 'avoid-all' }
+      margin:        0,
+      filename:      `Surat_Cuti_${namaPegawai}.pdf`,
+      image:         { type: 'jpeg', quality: 0.98 },
+      html2canvas:   { scale: 2, useCORS: true, scrollY: 0 },
+      jsPDF:         { unit: 'cm', format: [21.5, 33], orientation: 'portrait' },
+      pagebreak:     { mode: 'avoid-all' }
     };
 
     html2pdf().set(options).from(element).save();
@@ -371,10 +371,10 @@
     document.getElementById('disp_mulai').innerText = formatTglIndo(data.mulaiTanggal || data.tglMulai);
     document.getElementById('disp_sampai').innerText = formatTglIndo(data.sampaiTanggal || data.tglSelesai);
     
-    // V. Saldo Cuti (Menampilkan Saldo Awal Sebelum Dipotong Cuti yang Diajukan)
-    let rawN2 = parseInt(data.n2_saldo) || 0;
-    let rawN1 = parseInt(data.n1_saldo) || 0;
-    let rawN  = parseInt(data.n_saldo)  || 0;
+    // V. Saldo Cuti (Menyesuaikan dengan Kolom Sheet Data_Saldo: N-2, N-1, N)
+    let rawN2 = parseInt(data.n2 || data.n2_saldo) || 0;
+    let rawN1 = parseInt(data.n1 || data.n1_saldo) || 0;
+    let rawN  = parseInt(data.n  || data.n_saldo)  || 0;
 
     let valLama = (data.lamaCuti || data.lama || "0").toString();
     let lamaHari = parseInt(valLama.replace(/\D/g, '')) || 0;
