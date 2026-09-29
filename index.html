@@ -251,47 +251,38 @@
   </div>
 
   <!-- ==================== MODAL UPLOAD FORM DISETUJUI ==================== -->
-  <!-- Modal Upload Form ACC -->
+ <!-- ==================== MODAL UPLOAD FORM DISETUJUI ==================== -->
 <div class="modal fade" id="modalUploadACC" tabindex="-1" aria-labelledby="modalUploadACCLabel" aria-hidden="true">
-
   <div class="modal-dialog">
-
     <div class="modal-content">
 
       <div class="modal-header">
-
         <h5 class="modal-title" id="modalUploadACCLabel">Upload Surat Cuti Disetujui</h5>
-
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-
       </div>
 
-      
+      <form id="formUploadACC" onsubmit="handleProcessUploadFile(event, 'uploadSuratDisetujui')">
+        <div class="modal-body">
+          <!-- ELEMEN KUNCI: Input hidden ini WAJIB ada untuk menyimpan rowIndex -->
+          <input type="hidden" id="uploadAccRowIndex" name="rowIndex">
 
-      <!-- INI BAGIAN PENTINGNYA: Form onsubmit -->
+          <!-- Alert Status Upload -->
+          <div id="uploadAccStatusAlert" class="d-none mb-3 alert" role="alert"></div>
 
-      <!-- Form Upload ACC -->
+          <!-- Input File PDF -->
+          <div class="mb-3">
+            <label for="fileACC" class="form-label">Pilih File (PDF)</label>
+            <input class="form-control" type="file" id="fileACC" accept=".pdf" required>
+          </div>
+        </div>
 
-<form id="formUploadACC" onsubmit="handleProcessUploadFile(event, 'uploadSuratDisetujui')">
-
-  <div class="modal-body">
-   <input class="form-control" type="file" id="fileACC" accept=".pdf" required>
-    <div id="uploadAccStatusAlert" class="d-none mb-3 alert" role="alert"></div>
-    <div class="mb-3">
-      <label for="fileACC" class="form-label">Pilih File (PDF)</label>
-      <input class="form-control" type="file" id="fileACC" accept=".pdf" required>
-    </div>
-  </div>
-  
-  <div class="modal-footer">
-    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-    <!-- 3. PERBAIKAN ID TOMBOL SUBMIT (Harus btnSubmitUploadACC) -->
-    <button type="submit" class="btn btn-primary" id="btnSubmitUploadACC">
-      <i class="bi bi-upload me-1"></i> Mulai Upload
-    </button>
-  </div>
-
-</form>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitUploadACC">
+            <i class="bi bi-upload me-1"></i> Mulai Upload
+          </button>
+        </div>
+      </form>
 
     </div>
   </div>
