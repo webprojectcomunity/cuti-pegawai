@@ -372,8 +372,9 @@
     document.getElementById('disp_sampai').innerText = formatTglIndo(data.sampaiTanggal || data.tglSelesai);
     
     // V. Saldo Cuti (Menyesuaikan dengan Kolom Sheet Data_Saldo: N-2, N-1, N)
-    let rawN2 = parseInt(data.n2 || data.n2_saldo) || 0;
-    let rawN1 = parseInt(data.n1 || data.n1_saldo) || 0;
+    // Pastikan batas maksimal cuti carry-over N-1 dan N-2 adalah 6 hari sesuai standar[cite: 2]
+    let rawN2 = Math.min(parseInt(data.n2 || data.n2_saldo) || 0, 6);
+    let rawN1 = Math.min(parseInt(data.n1 || data.n1_saldo) || 0, 6);
     let rawN  = parseInt(data.n  || data.n_saldo)  || 0;
 
     let valLama = (data.lamaCuti || data.lama || "0").toString();
@@ -382,29 +383,29 @@
     if (data.jenisCuti === "Cuti Tahunan" && lamaHari > 0) {
       let sisaLama = lamaHari;
 
-      const maxN = 12;
-      const butuhN = maxN - rawN;
-      if (butuhN > 0) {
-        let tambahN = Math.min(sisaLama, butuhN);
-        rawN += tambahN;
-        sisaLama -= tambahN;
+      // 1. Potong N-2 terlebih dahulu
+      if (rawN2 > 0 && sisaLama > 0) {
+        let potongN2 = Math.min(rawN2, sisaLama);
+        rawN2 -= potongN2;
+        sisaLama -= potongN2;
       }
 
-      if (sisaLama > 0) {
-        const maxN1 = 6;
-        const butuhN1 = maxN1 - rawN1;
-        if (butuhN1 > 0) {
-          let tambahN1 = Math.min(sisaLama, butuhN1);
-          rawN1 += tambahN1;
-          sisaLama -= tambahN1;
-        }
+      // 2. Jika N-2 habis (0), potong N-1
+      if (rawN1 > 0 && sisaLama > 0) {
+        let potongN1 = Math.min(rawN1, sisaLama);
+        rawN1 -= potongN1;
+        sisaLama -= potongN1;
       }
 
-      if (sisaLama > 0) {
-        rawN2 += sisaLama;
+      // 3. Jika N-1 habis (0), baru potong N (Tahun berjalan)
+      if (rawN > 0 && sisaLama > 0) {
+        let potongN = Math.min(rawN, sisaLama);
+        rawN -= potongN;
+        sisaLama -= potongN;
       }
     }
 
+    // Tampilkan hasil pengurangan ke antarmuka cetak
     document.getElementById('disp_n2').innerText = rawN2;
     document.getElementById('disp_n1').innerText = rawN1;
     document.getElementById('disp_n').innerText  = rawN;
