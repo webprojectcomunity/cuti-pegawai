@@ -265,7 +265,7 @@
 <form id="formUploadACC" onsubmit="handleProcessUploadFile(event, 'uploadSuratDisetujui')">
   <div class="modal-body">
     <!-- 1. PERBAIKAN ID ROW INDEX (Harus uploadAccRowIndex) -->
-    <input type="hidden" id="uploadAccRowIndex" name="rowIndex">
+   <input class="form-control" type="file" id="fileACC" accept=".pdf" required>
     
     <!-- 2. TAMBAHAN ELEMEN ALERT UNTUK LOADING & ERROR (Dibutuhkan oleh JS Anda) -->
     <div id="uploadAccStatusAlert" class="d-none mb-3 alert" role="alert"></div>
