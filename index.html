@@ -261,21 +261,29 @@
       </div>
       
       <!-- INI BAGIAN PENTINGNYA: Form onsubmit -->
-      <form id="formUploadACC" onsubmit="handleProcessUploadFile(event, 'uploadSuratDisetujui')">
-        <div class="modal-body">
-          <!-- Input hidden untuk menyimpan baris data yang akan diupdate -->
-          <input type="hidden" id="accRowIndex" name="rowIndex">
-          
-          <div class="mb-3">
-            <label for="fileACC" class="form-label">Pilih File (PDF)</label>
-            <input class="form-control" type="file" id="fileACC" accept=".pdf" required>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-primary" id="btnSubmitACC">Upload File</button>
-        </div>
-      </form>
+      <!-- Form Upload ACC -->
+<form id="formUploadACC" onsubmit="handleProcessUploadFile(event, 'uploadSuratDisetujui')">
+  <div class="modal-body">
+    <!-- 1. PERBAIKAN ID ROW INDEX (Harus uploadAccRowIndex) -->
+    <input type="hidden" id="uploadAccRowIndex" name="rowIndex">
+    
+    <!-- 2. TAMBAHAN ELEMEN ALERT UNTUK LOADING & ERROR (Dibutuhkan oleh JS Anda) -->
+    <div id="uploadAccStatusAlert" class="d-none mb-3 alert" role="alert"></div>
+    
+    <div class="mb-3">
+      <label for="fileACC" class="form-label">Pilih File (PDF)</label>
+      <input class="form-control" type="file" id="fileACC" accept=".pdf" required>
+    </div>
+  </div>
+  
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+    <!-- 3. PERBAIKAN ID TOMBOL SUBMIT (Harus btnSubmitUploadACC) -->
+    <button type="submit" class="btn btn-primary" id="btnSubmitUploadACC">
+      <i class="bi bi-upload me-1"></i> Mulai Upload
+    </button>
+  </div>
+</form>
 
     </div>
   </div>
