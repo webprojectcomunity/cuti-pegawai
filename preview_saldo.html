@@ -333,11 +333,11 @@ let rawDataSaldo = [];
 let modalInstance = null;
 let modalRiwayatInstance = null;
 let modalUploadACCInstance = null;
-let modalUploadLampiranInstance = null; // Variable Instance Modal Upload Lampiran
+let modalUploadLampiranInstance = null;
 
 let activeRiwayatNip = '';
 let activeRiwayatNama = '';
-window.activeRiwayatData = []; // Cache global untuk data riwayat pegawai aktif
+window.activeRiwayatData = [];
 
 // State Pagination Riwayat
 let currentPageRiwayat = 1;
@@ -425,12 +425,11 @@ document.addEventListener('DOMContentLoaded', () => {
   modalInstance = new bootstrap.Modal(document.getElementById('modalSaldo'));
   modalRiwayatInstance = new bootstrap.Modal(document.getElementById('modalRiwayat'));
   modalUploadACCInstance = new bootstrap.Modal(document.getElementById('modalUploadACC'));
-  modalUploadLampiranInstance = new bootstrap.Modal(document.getElementById('modalUploadLampiran')); // Inisialisasi Modal Lampiran
+  modalUploadLampiranInstance = new bootstrap.Modal(document.getElementById('modalUploadLampiran'));
 
   if (document.getElementById('modalTahun')) document.getElementById('modalTahun').value = new Date().getFullYear();
   if (document.getElementById('manualTahun')) document.getElementById('manualTahun').value = new Date().getFullYear();
   
-  // EVENT LISTENER: AUTO-FILL SNAPSHOT FORM SAAT DROPDOWN DIUBAH
   const selectTanggal = document.getElementById('selectTanggalPengajuan');
   if (selectTanggal) {
     selectTanggal.addEventListener('change', function(e) {
@@ -667,9 +666,7 @@ async function jalankanRolloverTahunBaru() {
   }
 }
 
-// ==========================================
 // HELPER: PARSER TANGGAL INDONESIA
-// ==========================================
 function parseTanggalIndo(str) {
   if (!str) return 0;
   
@@ -704,10 +701,7 @@ function parseTanggalIndo(str) {
   return 0;
 }
 
-
-// ==========================================
 // FUNGSI UTAMA RIWAYAT CUTI
-// ==========================================
 async function bukaModalRiwayat(nip, nama) {
   activeRiwayatNip = nip;
   activeRiwayatNama = nama;
@@ -734,7 +728,6 @@ async function bukaModalRiwayat(nip, nama) {
       return;
     }
 
-    // --- PROSES SORTING MENGGUNAKAN HELPER ---
     res.data.sort((a, b) => {
       const rawA = a.timestamp || a.Timestamp || a.tanggalPengajuan || a.tglPengajuan || '';
       const rawB = b.timestamp || b.Timestamp || b.tanggalPengajuan || b.tglPengajuan || '';
@@ -802,7 +795,6 @@ async function simpanRiwayatSaldoManual(e) {
     if (res.success) {
       showToast("Sukses", res.message || "Snapshot saldo berhasil diperbarui!", "success");
 
-      // UPDATE DATA CACHE LOKAL SECARA LANGSUNG
       if (window.activeRiwayatData && window.activeRiwayatData.length > 0) {
         const itemIdx = window.activeRiwayatData.findIndex(r => String(r.rowIndex) === String(rowIndex));
         if (itemIdx !== -1) {
@@ -840,7 +832,7 @@ async function simpanRiwayatSaldoManual(e) {
   }
 }
 
-// RENDER TABEL RIWAYAT DARI CACHE (DENGAN PAGINATION & LAMPIRAN)
+// RENDER TABEL RIWAYAT DARI CACHE
 function renderTabelRiwayatFromCache() {
   const tbodyRiwayat = document.getElementById('riwayatTableBody');
   if (!tbodyRiwayat || !window.activeRiwayatData) return;
@@ -853,7 +845,6 @@ function renderTabelRiwayatFromCache() {
     return;
   }
 
-  // LOGIKA PAGINATION (5 DATA PER HALAMAN)
   const totalPages = Math.ceil(totalItems / itemsPerPageRiwayat);
   if (currentPageRiwayat > totalPages) currentPageRiwayat = totalPages;
   if (currentPageRiwayat < 1) currentPageRiwayat = 1;
@@ -863,7 +854,6 @@ function renderTabelRiwayatFromCache() {
   const pageData = window.activeRiwayatData.slice(startIndex, endIndex);
 
   pageData.forEach((r, idx) => {
-    // A. LOGIKA LAMPIRAN BERKAS
     let linkFile = '-';
     const fileLampiran = r.fileSakit || r.fileLampiran || r.lampiran;
 
@@ -884,7 +874,6 @@ function renderTabelRiwayatFromCache() {
       `;
     }
 
-    // B. LOGIKA SNAPSHOT SALDO
     let n2 = parseInt(r.n2_saldo !== undefined ? r.n2_saldo : r.n2) || 0;
     let n1 = parseInt(r.n1_saldo !== undefined ? r.n1_saldo : r.n1) || 0;
     let n  = parseInt(r.n_saldo  !== undefined ? r.n_saldo  : r.n)  || 0;
@@ -902,7 +891,6 @@ function renderTabelRiwayatFromCache() {
       </div>
     `;
 
-    // C. LOGIKA FORM ACC
     let colFormACC = '';
     const linkACC = r.fileApproved || r.suratDisetujui;
 
@@ -938,7 +926,6 @@ function renderTabelRiwayatFromCache() {
     tbodyRiwayat.appendChild(trR);
   });
 
-  // UPDATE KONTROL PAGINATION UI
   renderPaginationRiwayatUI(totalPages, totalItems, startIndex + 1, endIndex);
 }
 
@@ -956,13 +943,11 @@ function renderPaginationRiwayatUI(totalPages, totalItems, startItem, endItem) {
 
   if (totalPages <= 1) return;
 
-  // Tombol Prev
   const liPrev = document.createElement('li');
   liPrev.className = `page-item ${currentPageRiwayat === 1 ? 'disabled' : ''}`;
   liPrev.innerHTML = `<a class="page-link" href="#" onclick="gantiHalamanRiwayat(${currentPageRiwayat - 1}); return false;">Prev</a>`;
   nav.appendChild(liPrev);
 
-  // Tombol Nomor Halaman
   for (let i = 1; i <= totalPages; i++) {
     const li = document.createElement('li');
     li.className = `page-item ${i === currentPageRiwayat ? 'active' : ''}`;
@@ -970,20 +955,18 @@ function renderPaginationRiwayatUI(totalPages, totalItems, startItem, endItem) {
     nav.appendChild(li);
   }
 
-  // Tombol Next
   const liNext = document.createElement('li');
   liNext.className = `page-item ${currentPageRiwayat === totalPages ? 'disabled' : ''}`;
   liNext.innerHTML = `<a class="page-link" href="#" onclick="gantiHalamanRiwayat(${currentPageRiwayat + 1}); return false;">Next</a>`;
   nav.appendChild(liNext);
 }
 
-// NAVIGASI HALAMAN PAGINATION
 function gantiHalamanRiwayat(page) {
   currentPageRiwayat = page;
   renderTabelRiwayatFromCache();
 }
 
-// MODAL UPLOAD LAMPIRAN BERKAS (SAKIT/PENDUKUNG)
+// MODAL UPLOAD LAMPIRAN BERKAS
 function bukaModalUploadLampiran(rowIndex) {
   document.getElementById('uploadLampiranRowIndex').value = rowIndex;
   document.getElementById('fileLampiran').value = '';
@@ -994,7 +977,6 @@ function bukaModalUploadLampiran(rowIndex) {
   modalUploadLampiranInstance.show();
 }
 
-// PROSES UPLOAD LAMPIRAN BERKAS
 async function handleProcessUploadLampiran(e) {
   e.preventDefault();
   
@@ -1025,14 +1007,13 @@ async function handleProcessUploadLampiran(e) {
 
     if (file.size > MAX_ALLOWED_SIZE) {
       alertBox.className = 'alert alert-danger py-2 small';
-      alertBox.innerText = `Ukuran berkas (${(file.size / (1024*1024)).toFixed(2)} MB) terlalu besar! Maksimal 10 MB.`;
+      alertBox.innerText = `Ukuran berkas terlalu besar! Maksimal 10 MB.`;
       btnSubmit.disabled = false;
       btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload Lampiran`;
       return;
     }
 
     alertBox.innerText = 'Mengunggah berkas ke Google Drive...';
-
     const reader = new FileReader();
 
     reader.onerror = () => {
@@ -1072,7 +1053,6 @@ async function handleProcessUploadLampiran(e) {
             btnSubmit.disabled = false;
             btnSubmit.innerHTML = `<i class="bi bi-upload me-1"></i> Mulai Upload Lampiran`;
             showToast("Berhasil", "Berkas Lampiran berhasil diunggah!", "success");
-            
             bukaModalRiwayat(activeRiwayatNip, activeRiwayatNama);
           }, 800);
         } else {
@@ -1107,8 +1087,6 @@ function bukaModalUploadACC(rowIndex) {
   modalUploadACCInstance.show();
 }
 
-// PROSES UPLOAD BERKAS FORM ACC
-// HANDLER SUBMIT UPLOAD FORM ACC
 async function handleProcessUploadACC(e) {
   e.preventDefault();
 
@@ -1123,16 +1101,18 @@ async function handleProcessUploadACC(e) {
     return;
   }
 
-  const file = fileInput.files[0];
+  let file = fileInput.files[0];
   btnSubmit.disabled = true;
   btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Mengunggah...`;
 
   try {
-    // Read File sebagai Base64 DataURL
+    if (file.type.startsWith('image/')) {
+      file = await compressImage(file, 1200, 0.7);
+    }
     const base64Data = await convertFileToBase64(file);
 
     const payload = {
-      action: 'uploadSuratDisetujui', // Disamakan dengan backend
+      action: 'uploadSuratDisetujui',
       rowIndex: Number(rowIndex),
       fileName: `ACC_${Date.now()}_${file.name}`,
       mimeType: file.type,
@@ -1149,8 +1129,7 @@ async function handleProcessUploadACC(e) {
     if (res.success) {
       modalUploadACCInstance.hide();
       showToast("Sukses", res.message || "Berkas ACC berhasil diunggah.", "success");
-      // Reload modal riwayat / tabel jika ada fungsi pencarian ulang
-      if (typeof muatRiwayatCuti === 'function') muatRiwayatCuti();
+      bukaModalRiwayat(activeRiwayatNip, activeRiwayatNama);
     } else {
       alertBox.className = "alert alert-danger py-2 small";
       alertBox.innerText = res.message || "Gagal mengunggah file.";
@@ -1166,7 +1145,6 @@ async function handleProcessUploadACC(e) {
   }
 }
 
-// HELPER CONVERT FILE TO BASE64
 function convertFileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1175,6 +1153,7 @@ function convertFileToBase64(file) {
     reader.readAsDataURL(file);
   });
 }
+
 // MODAL TAMBAH SALDO CUTI
 function bukaModalTambah() {
   document.getElementById('formSaldo').reset();
@@ -1210,7 +1189,7 @@ function bukaModalEdit(index) {
   modalInstance.show();
 }
 
-/// SIMPAN SALDO UTAMA
+// SIMPAN SALDO UTAMA
 async function simpanSaldo(e) {
   e.preventDefault();
 
@@ -1218,8 +1197,6 @@ async function simpanSaldo(e) {
   btnSimpan.disabled = true;
   btnSimpan.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...`;
 
-  // Payload sudah sangat tepat menggunakan action 'simpanSaldo' 
-  // agar langsung ditangkap oleh backend Code.gs
   const payload = {
     action: 'simpanSaldo',
     nip: document.getElementById('modalNip').value.trim(),
@@ -1242,7 +1219,7 @@ async function simpanSaldo(e) {
     if (res.success) {
       modalInstance.hide();
       showToast("Sukses", res.message || "Data saldo cuti berhasil disimpan.", "success");
-      loadData(); // Refresh data di tabel
+      loadData();
     } else {
       showToast("Gagal", res.message || "Gagal menyimpan data saldo.", "danger");
     }
@@ -1254,7 +1231,7 @@ async function simpanSaldo(e) {
   }
 }
 
-// KONFIRMASI HAPUS DATA SALDO
+// KONFIRMASI HAPUS DATA SALDO (Sinkron dengan backend: hapusSaldo / deleteSaldo)
 async function konfirmasiHapus(nip, nama) {
   if (!confirm(`Apakah Anda yakin ingin menghapus data saldo cuti pegawai ${nama} (NIP: ${nip})?`)) {
     return;
