@@ -1241,7 +1241,7 @@ async function konfirmasiHapus(nip, nama) {
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'hapusSaldo', nip: nip })
+      body: JSON.stringify({ action: 'deleteSaldo', nip: nip })
     });
     const res = await response.json();
 
