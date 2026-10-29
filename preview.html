@@ -288,7 +288,6 @@
     let str = stringTanggal.toString().trim();
     const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
-    // 1. Ekstrak pola tanggal "DD NamaBulan YYYY" jika string mengandung jam/teks tambahan
     for (let b of bulanIndo) {
       if (str.toLowerCase().includes(b.toLowerCase())) {
         let match = str.match(new RegExp(`\\d{1,2}\\s+${b}\\s+\\d{4}`, 'i'));
@@ -296,16 +295,14 @@
       }
     }
 
-    // 2. Jika berbentuk Date Standard / ISO (contoh: "2026-09-10T08:30:00" atau "2026-09-10")
     let dateObj = new Date(str);
     if (!isNaN(dateObj.getTime())) {
       const opsi = { day: 'numeric', month: 'long', year: 'numeric' };
       return dateObj.toLocaleDateString('id-ID', opsi);
     }
 
-    // 3. Jika format tanggal berpemisah garis miring (contoh: "10/09/2026 08:30:00")
     if (str.includes('/')) {
-      let cleanStr = str.split(' ')[0]; // Ambil bagian tanggal saja, buang jam
+      let cleanStr = str.split(' ')[0];
       let parts = cleanStr.split('/');
       if (parts.length === 3) {
         let d = new Date(parts[2], parts[1] - 1, parts[0]);
@@ -344,6 +341,7 @@
     }
 
     const data = JSON.parse(dataRaw);
+    console.log("Data Cuti Loaded:", data);
 
     // ==========================================
     // LOGIKA CETAK TANGGAL DARI TIMESTAMP
@@ -353,7 +351,6 @@
     if (tglInput) {
       document.getElementById('tglSekarang').innerText = formatTglIndo(tglInput);
     } else {
-      // Fallback ke tanggal hari ini jika data timestamp kosong
       const options = { year: 'numeric', month: 'long', day: 'numeric' };
       document.getElementById('tglSekarang').innerText = new Date().toLocaleDateString('id-ID', options);
     }
@@ -371,14 +368,23 @@
     document.getElementById('disp_mulai').innerText = formatTglIndo(data.mulaiTanggal || data.tglMulai);
     document.getElementById('disp_sampai').innerText = formatTglIndo(data.sampaiTanggal || data.tglSelesai);
     
-    // V. Saldo Cuti (Mengambil nilai N dari Kolom Y / n_saldo, N-1, dan N-2 dengan batas maksimal carry-over 6 hari)
-    let rawN2 = Math.min(parseInt(data.n2 || data.n2_saldo) || 0, 6);
-    let rawN1 = Math.min(parseInt(data.n1 || data.n1_saldo) || 0, 6);
-    let rawN  = parseInt(data.n_saldo !== undefined ? data.n_saldo : (data.n || 0)) || 0;
+    // V. SALDO CUTI: MENGAMBIL NILAI SNAPSHOT AWAL DARI SPREADSHEET (KOLOM W, X, Y)
+    // - N-2 = Kolom W (n2_saldo)
+    // - N-1 = Kolom X (n1_saldo)
+    // - N   = Kolom Y (n_saldo)
+    let rawN2 = Math.min(parseInt(data.n2_saldo !== undefined && data.n2_saldo !== null ? data.n2_saldo : (data.n2 || 0)) || 0, 6);
+    let rawN1 = Math.min(parseInt(data.n1_saldo !== undefined && data.n1_saldo !== null ? data.n1_saldo : (data.n1 || 0)) || 0, 6);
+    
+    // Penanganan presisi khusus untuk N (Kolom Y)
+    let valN = (data.n_saldo !== undefined && data.n_saldo !== null) ? data.n_saldo :
+               ((data.n !== undefined && data.n !== null) ? data.n : 
+               ((data.N !== undefined && data.N !== null) ? data.N : 0));
+    let rawN = parseInt(valN, 10) || 0;
 
     let valLama = (data.lamaCuti || data.lama || "0").toString();
     let lamaHari = parseInt(valLama.replace(/\D/g, '')) || 0;
 
+    // Lakukan pengurangan berurutan N-2 -> N-1 -> N jika jenis cuti adalah Cuti Tahunan
     if (data.jenisCuti === "Cuti Tahunan" && lamaHari > 0) {
       let sisaLama = lamaHari;
 
@@ -396,7 +402,7 @@
         sisaLama -= potongN1;
       }
 
-      // 3. Jika N-1 habis (0), baru potong N (Tahun Berjalan / Kolom Y)
+      // 3. Jika N-1 habis (0), baru potong N (Kolom Y)
       if (rawN > 0 && sisaLama > 0) {
         let potongN = Math.min(rawN, sisaLama);
         rawN -= potongN;
@@ -404,7 +410,7 @@
       }
     }
 
-    // Tampilkan hasil pengurangan saldo ke antarmuka cetak
+    // Tampilkan hasil nilai sisa saldo ke halaman cetak
     document.getElementById('disp_n2').innerText = rawN2;
     document.getElementById('disp_n1').innerText = rawN1;
     document.getElementById('disp_n').innerText  = rawN;
