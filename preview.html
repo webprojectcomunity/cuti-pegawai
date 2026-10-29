@@ -371,11 +371,10 @@
     document.getElementById('disp_mulai').innerText = formatTglIndo(data.mulaiTanggal || data.tglMulai);
     document.getElementById('disp_sampai').innerText = formatTglIndo(data.sampaiTanggal || data.tglSelesai);
     
-    // V. Saldo Cuti (Menyesuaikan dengan Kolom Sheet Data_Saldo: N-2, N-1, N)
-    // Pastikan batas maksimal cuti carry-over N-1 dan N-2 adalah 6 hari sesuai standar[cite: 2]
+    // V. Saldo Cuti (Mengambil nilai N dari Kolom Y / n_saldo, N-1, dan N-2 dengan batas maksimal carry-over 6 hari)
     let rawN2 = Math.min(parseInt(data.n2 || data.n2_saldo) || 0, 6);
     let rawN1 = Math.min(parseInt(data.n1 || data.n1_saldo) || 0, 6);
-    let rawN  = parseInt(data.n  || data.n_saldo)  || 0;
+    let rawN  = parseInt(data.n_saldo !== undefined ? data.n_saldo : (data.n || 0)) || 0;
 
     let valLama = (data.lamaCuti || data.lama || "0").toString();
     let lamaHari = parseInt(valLama.replace(/\D/g, '')) || 0;
@@ -397,7 +396,7 @@
         sisaLama -= potongN1;
       }
 
-      // 3. Jika N-1 habis (0), baru potong N (Tahun berjalan)
+      // 3. Jika N-1 habis (0), baru potong N (Tahun Berjalan / Kolom Y)
       if (rawN > 0 && sisaLama > 0) {
         let potongN = Math.min(rawN, sisaLama);
         rawN -= potongN;
@@ -405,7 +404,7 @@
       }
     }
 
-    // Tampilkan hasil pengurangan ke antarmuka cetak
+    // Tampilkan hasil pengurangan saldo ke antarmuka cetak
     document.getElementById('disp_n2').innerText = rawN2;
     document.getElementById('disp_n1').innerText = rawN1;
     document.getElementById('disp_n').innerText  = rawN;
