@@ -368,41 +368,36 @@
     document.getElementById('disp_mulai').innerText = formatTglIndo(data.mulaiTanggal || data.tglMulai);
     document.getElementById('disp_sampai').innerText = formatTglIndo(data.sampaiTanggal || data.tglSelesai);
     
-    // V. SALDO CUTI: MENGAMBIL NILAI SNAPSHOT AWAL DARI SPREADSHEET (KOLOM W, X, Y)
-    // - N-2 = Kolom W (n2_saldo)
-    // - N-1 = Kolom X (n1_saldo)
-    // - N   = Kolom Y (n_saldo)
+    // V. SALDO CUTI: AMBIL PRESISI DARI KOLOM W, X, Y (n2_saldo, n1_saldo, n_saldo)
     let rawN2 = Math.min(parseInt(data.n2_saldo !== undefined && data.n2_saldo !== null ? data.n2_saldo : (data.n2 || 0)) || 0, 6);
     let rawN1 = Math.min(parseInt(data.n1_saldo !== undefined && data.n1_saldo !== null ? data.n1_saldo : (data.n1 || 0)) || 0, 6);
     
-    // Penanganan presisi khusus untuk N (Kolom Y)
-    let valN = (data.n_saldo !== undefined && data.n_saldo !== null) ? data.n_saldo :
-               ((data.n !== undefined && data.n !== null) ? data.n : 
-               ((data.N !== undefined && data.N !== null) ? data.N : 0));
-    let rawN = parseInt(valN, 10) || 0;
+    // Mengambil nilai n_saldo (Kolom Y) secara presisi tanpa tertimpa properti kosong/0 lain
+    let rawN = parseInt(
+      data.n_saldo !== undefined && data.n_saldo !== null ? data.n_saldo : 
+      (data.n !== undefined && data.n !== null ? data.n : 
+      (data.N !== undefined && data.N !== null ? data.N : 0))
+    , 10) || 0;
 
     let valLama = (data.lamaCuti || data.lama || "0").toString();
     let lamaHari = parseInt(valLama.replace(/\D/g, '')) || 0;
 
-    // Lakukan pengurangan berurutan N-2 -> N-1 -> N jika jenis cuti adalah Cuti Tahunan
+    // Logika Pengurangan Berurutan N-2 -> N-1 -> N (Aktifkan jika ingin saldo dikurangi otomatis sesuai durasi cuti yang diajukan)
     if (data.jenisCuti === "Cuti Tahunan" && lamaHari > 0) {
       let sisaLama = lamaHari;
 
-      // 1. Potong N-2 terlebih dahulu
       if (rawN2 > 0 && sisaLama > 0) {
         let potongN2 = Math.min(rawN2, sisaLama);
         rawN2 -= potongN2;
         sisaLama -= potongN2;
       }
 
-      // 2. Jika N-2 habis (0), potong N-1
       if (rawN1 > 0 && sisaLama > 0) {
         let potongN1 = Math.min(rawN1, sisaLama);
         rawN1 -= potongN1;
         sisaLama -= potongN1;
       }
 
-      // 3. Jika N-1 habis (0), baru potong N (Kolom Y)
       if (rawN > 0 && sisaLama > 0) {
         let potongN = Math.min(rawN, sisaLama);
         rawN -= potongN;
@@ -410,7 +405,7 @@
       }
     }
 
-    // Tampilkan hasil nilai sisa saldo ke halaman cetak
+    // Tampilkan hasil nilai saldo akhir ke elemen antarmuka cetak
     document.getElementById('disp_n2').innerText = rawN2;
     document.getElementById('disp_n1').innerText = rawN1;
     document.getElementById('disp_n').innerText  = rawN;
